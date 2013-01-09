@@ -37,11 +37,7 @@ public class FlickrImporter implements Lifecycle {
         this.scheduler = s;
     }
 
-    /**
-     * call this to kick off the import job.
-     *
-     * @param file the directory to which the imported photos should be written
-     */
+
     public void importPhotosToDirectory(
             String at,
             String atSecret,
@@ -67,11 +63,7 @@ public class FlickrImporter implements Lifecycle {
         this.mapOfFilesToRunningJobs.put(file, jobExecution);
     }
 
-    /**
-     * tests to see if any jobs can be removed and, if so, does.
-     * <p/>
-     * todo we should re-work this in terms of {@link java.lang.ref.WeakReference weak references} and {@link java.util.WeakHashMap weak hash map}.
-     */
+
     public static class JobCleanupRunnable implements Runnable {
 
         private volatile Map<File, JobExecution> executionMap;
