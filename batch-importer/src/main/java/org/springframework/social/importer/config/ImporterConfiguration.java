@@ -12,9 +12,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
+import org.springframework.jdbc.datasource.init.DataSourceInitializer;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
@@ -65,6 +68,17 @@ public class ImporterConfiguration {
     @Bean
     public MapJobRegistry mapJobRegistry() throws Exception {
         return new MapJobRegistry();
+    }
+    
+    @Bean
+    public DataSourceInitializer initializer(DataSource dataSource) {
+    	DataSourceInitializer initializer = new DataSourceInitializer();
+    	initializer.setDataSource(dataSource);
+    	ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+    	populator.addScript(new ClassPathResource("org/springframework/batch/core/schema-h2.sql"));
+		initializer.setDatabasePopulator(populator);
+		populator.setContinueOnError(true);
+		return initializer;
     }
 
     @Bean

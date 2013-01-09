@@ -1,4 +1,8 @@
+flickr.properties
 *.idea
+.settings/
+.project
+.classpath
 target
 *iml
 *ipr

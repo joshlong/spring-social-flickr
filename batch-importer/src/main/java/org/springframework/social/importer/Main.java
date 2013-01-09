@@ -56,7 +56,7 @@ public class Main {
      */
     private static <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) throws Throwable {
 
-        File propertiesFile = new File(new File(SystemUtils.getUserHome(), "Desktop"), "flickr.properties");
+        File propertiesFile = new File("flickr.properties");
         Assert.isTrue(propertiesFile.exists(), "the flickr.properties file must exist.");
         Resource propertiesResource = new FileSystemResource(propertiesFile);
         Properties properties = new Properties();
