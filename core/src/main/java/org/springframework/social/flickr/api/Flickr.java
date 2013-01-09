@@ -3,6 +3,7 @@ package org.springframework.social.flickr.api;
 import org.springframework.social.ApiBinding;
 
 // TODO: Auto-generated Javadoc
+
 /**
  * The Interface Flickr.
  *
@@ -10,18 +11,27 @@ import org.springframework.social.ApiBinding;
  */
 public interface Flickr extends ApiBinding {
 
-	/**
-	 * People operations.
-	 *
-	 * @return the people operations
-	 */
-	PeopleOperations peopleOperations();
+    PeopleOperations peopleOperations();
 
-	/**
-	 * Photo operations.
-	 *
-	 * @return the photo operations
-	 */
-	PhotoOperations photoOperations();
+    PhotoOperations photoOperations();
 
+    PhotoCommentOperations photoCommentOperations();
+
+    PhotoLicenseOperations photoLicenseOperations();
+
+    PhotoNoteOperations photoNoteOperations();
+
+    PhotosetOperations photosetOperations();
+
+    GalleriesOperations galleriesOperations();
+
+    FavoritesOperations favoritesOperations();
+
+    ActivityOperations activityOperations();
+
+    BlogsOperations blogsOperations();
+
+    CommonsOperations commonsOperations();
+
+    GroupsOperations groupsOperations();
 }

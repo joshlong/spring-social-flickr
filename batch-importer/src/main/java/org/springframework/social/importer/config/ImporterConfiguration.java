@@ -28,6 +28,7 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
+import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.flickr.api.impl.FlickrTemplate;
 import org.springframework.social.importer.*;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -50,11 +51,12 @@ public class ImporterConfiguration {
 
     @Bean
     public FlickrImporter importer(
-            @Qualifier("flickrImportJob")  Job importFlickrPhotosJob,
+            @Qualifier("flickrImportJob") Job importFlickrPhotosJob,
             JobLauncher jobLauncher,
             TaskScheduler[] taskScheduler) {
         return new FlickrImporter(importFlickrPhotosJob, jobLauncher, taskScheduler[0]);
     }
+
     private boolean shouldCreateTables = false;
 
     @Bean
@@ -104,7 +106,7 @@ public class ImporterConfiguration {
     public DataSource dataSource(Environment environment) {
         String pw = environment.getProperty("dataSource.password"),
                 user = environment.getProperty("dataSource.user"),
-                url = environment.getProperty("dataSource.url") ;
+                url = environment.getProperty("dataSource.url");
         Class<Driver> classOfDs = environment.getPropertyAsClass("dataSource.driverClassName", Driver.class);
 
         SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
@@ -139,20 +141,13 @@ public class ImporterConfiguration {
     @Bean(name = "photoAlbumItemReader")
     @Scope(value = "step")
     public FlickrServicePhotoAlbumItemReader photoAlbumItemReader(
-            @Value("#{jobParameters['accessToken']}") String at,
-            @Value("#{jobParameters['accessTokenSecret']}") String atSecret,
-            @Value("#{jobParameters['consumerKey']}") String consumerKey,
-            @Value("#{jobParameters['consumerSecret']}") String consumerSecret
+            Flickr flickr
     ) throws Throwable {
-        FlickrTemplate flickrTemplate = new FlickrTemplate(consumerKey, consumerSecret, at, atSecret);
-        return new FlickrServicePhotoAlbumItemReader(flickrTemplate);
+        return new FlickrServicePhotoAlbumItemReader(flickr);
     }
-
 
     @Bean(name = "photoAlbumItemWriter")
     public JdbcBatchItemWriter<PhotoSet> writer(DataSource ds) {
-
-
         String upsertPhotoAlbumsSql =
                 "with new_values (title, user_id, description,  album_id, url, count_photos, count_videos) as ( " +
                         " values (  :t, :ui, :d, :a, :u, :cp, :cv )  ), " +
@@ -183,7 +178,6 @@ public class ImporterConfiguration {
         return jdbcBatchItemWriter;
     }
 
-
     @Bean(name = "photoSetJdbcCursorItemReader")
     public JdbcCursorItemReader<PhotoSet> readPhotoAlbumsFromDatabaseItemReader(DataSource dataSource) {
 
@@ -209,18 +203,11 @@ public class ImporterConfiguration {
 
     @Bean(name = "delegatingFlickrPhotoAlbumPhotoItemReader")
     @Scope(value = "step")
-    public DelegatingFlickrPhotoAlbumPhotoItemReader delegatingFlickrPhotoAlbumPhotoItemReader(
-            @Qualifier("photoSetJdbcCursorItemReader") JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader,
-            @Value("#{jobParameters['accessToken']}") String accessToken,
-            @Value("#{jobParameters['accessTokenSecret']}") String atSecret,
-            @Value("#{jobParameters['consumerKey']}") String consumerKey,
-            @Value("#{jobParameters['consumerSecret']}") String consumerSecret) {
-        FlickrTemplate flickrTemplate = new FlickrTemplate(consumerKey, consumerSecret, accessToken, atSecret);
-        return new DelegatingFlickrPhotoAlbumPhotoItemReader(flickrTemplate, photoSetJdbcCursorItemReader);
+    public DelegatingFlickrPhotoAlbumPhotoItemReader delegatingFlickrPhotoAlbumPhotoItemReader(@Qualifier("photoSetJdbcCursorItemReader") JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader, Flickr flickr) {
+        return new DelegatingFlickrPhotoAlbumPhotoItemReader(flickr, photoSetJdbcCursorItemReader);
     }
 
     @Bean(name = "photoDetailItemWriter")
-
     public JdbcBatchItemWriter<Photo> photoDetailItemWriter(DataSource ds) {
 
         String upsertSql =
@@ -252,14 +239,6 @@ public class ImporterConfiguration {
         return photoDetailJdbcBatchItemWriter;
     }
 
-    // ===================================================
-    // STEP #3
-    // ===================================================
-
-    /**
-     * the final step is to read the database records, then download the file
-     */
-
     @Bean
     public JdbcCursorItemReader<Photo> photoDetailItemReader(DataSource dataSource) {
         JdbcCursorItemReader<Photo> photoSetJdbcCursorItemReader = new JdbcCursorItemReader<Photo>();
@@ -282,14 +261,19 @@ public class ImporterConfiguration {
 
     @Scope("step")
     @Bean(name = "photoDownloadingItemWriter")
-    public ItemWriter<Photo> photoDownloadingItemWriter(
-            @Value("#{jobParameters['output']}") String outputPath,
-            @Value("#{jobParameters['accessToken']}") String accessToken,
-            @Value("#{jobParameters['accessTokenSecret']}") String atSecret,
-            @Value("#{jobParameters['consumerKey']}") String consumerKey,
-            @Value("#{jobParameters['consumerSecret']}") String consumerSecret) {
-        FlickrTemplate flickrTemplate = new FlickrTemplate(consumerKey, consumerSecret, accessToken, atSecret);
-        flickrTemplate.getRestTemplate().getMessageConverters().add(new BufferedImageHttpMessageConverter());
-        return new PhotoDownloadingItemWriter(flickrTemplate, new File(outputPath));
+    public PhotoDownloadingItemWriter photoDownloadingItemWriter(@Value("#{jobParameters['output']}") String outputPath, Flickr flickrTemplate) {
+        FlickrTemplate flickrTemplate1 = (FlickrTemplate) flickrTemplate;
+        return new PhotoDownloadingItemWriter(flickrTemplate, flickrTemplate1.getRestTemplate(), new File(outputPath));
+    }
+
+    @Bean
+    @Scope("step")
+    public Flickr flickrTemplate(@Value("#{jobParameters['accessToken']}") String accessToken,
+                                 @Value("#{jobParameters['accessTokenSecret']}") String atSecret,
+                                 @Value("#{jobParameters['consumerKey']}") String consumerKey,
+                                 @Value("#{jobParameters['consumerSecret']}") String consumerSecret) {
+        FlickrTemplate ft = new FlickrTemplate(consumerKey, consumerSecret, accessToken, atSecret);
+        ft.getRestTemplate().getMessageConverters().add(new BufferedImageHttpMessageConverter());
+        return ft;
     }
 }

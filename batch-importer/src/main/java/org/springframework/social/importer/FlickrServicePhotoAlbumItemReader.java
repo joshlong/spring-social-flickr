@@ -6,10 +6,7 @@ import org.springframework.batch.item.NonTransientResourceException;
 import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.social.flickr.api.Person;
-import org.springframework.social.flickr.api.Photoset;
-import org.springframework.social.flickr.api.PhotosetOperations;
-import org.springframework.social.flickr.api.Photosets;
+import org.springframework.social.flickr.api.*;
 import org.springframework.social.flickr.api.impl.FlickrTemplate;
 
 import java.util.Queue;
@@ -18,13 +15,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class FlickrServicePhotoAlbumItemReader implements ItemReader<PhotoSet>, InitializingBean {
 
     private Logger logger = Logger.getLogger(getClass());
-    private FlickrTemplate flickrTemplate;
+    private Flickr  flickrTemplate;
     private Person person;
     private Queue<Photoset> photoSets = new ConcurrentLinkedQueue<Photoset>();
     private PhotosetOperations photosetOperations;
     private String userId;
 
-    public FlickrServicePhotoAlbumItemReader(FlickrTemplate flickrTemplate) {
+    public FlickrServicePhotoAlbumItemReader(Flickr flickrTemplate) {
         this.flickrTemplate = flickrTemplate;
         this.photosetOperations = this.flickrTemplate.photosetOperations();
         this.person = this.flickrTemplate.peopleOperations().getPersonProfile();

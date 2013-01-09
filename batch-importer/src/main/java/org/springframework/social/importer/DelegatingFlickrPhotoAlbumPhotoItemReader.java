@@ -2,6 +2,7 @@ package org.springframework.social.importer;
 
 import org.springframework.batch.item.*;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.flickr.api.MediaEnum;
 import org.springframework.social.flickr.api.PhotoSizeEnum;
 import org.springframework.social.flickr.api.Photoset;
@@ -19,11 +20,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class DelegatingFlickrPhotoAlbumPhotoItemReader implements ItemReader<Photo>, ItemStream {
 
     private JdbcCursorItemReader<PhotoSet> masterAlbumDelegate;
-    private FlickrTemplate flickrTemplate;
+    private Flickr flickrTemplate;
     private PhotoSet photoSet;
     private Queue<org.springframework.social.flickr.api.Photo> photoCollection = new ConcurrentLinkedQueue<org.springframework.social.flickr.api.Photo>();
 
-    public DelegatingFlickrPhotoAlbumPhotoItemReader(FlickrTemplate flickrTemplate, JdbcCursorItemReader<PhotoSet> masterAlbumDelegate) {
+    public DelegatingFlickrPhotoAlbumPhotoItemReader(Flickr flickrTemplate, JdbcCursorItemReader<PhotoSet> masterAlbumDelegate) {
         this.flickrTemplate = flickrTemplate;
         this.masterAlbumDelegate = masterAlbumDelegate;
     }

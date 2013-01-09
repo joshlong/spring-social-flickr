@@ -22,7 +22,6 @@ import java.util.Properties;
 public class Main {
 
     public static void main(String args[]) throws Throwable {
-
         AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
         registerPropertiesForFlickrConnection(applicationContext);
         applicationContext.register(ImporterConfiguration.class);

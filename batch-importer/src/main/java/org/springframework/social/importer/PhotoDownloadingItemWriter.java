@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.flickr.api.impl.FlickrTemplate;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestTemplate;
@@ -24,14 +25,14 @@ public class PhotoDownloadingItemWriter implements ItemWriter<Photo> {
 
     private File outputDirectory; // should come from job parameters
 
-    private FlickrTemplate flickrTemplate;
+    private Flickr  flickrTemplate;
 
     private RestTemplate restTemplate;
 
-    public PhotoDownloadingItemWriter(FlickrTemplate flickrTemplate, File outputDirectory) {
+    public PhotoDownloadingItemWriter(Flickr flickrTemplate, RestTemplate rt, File outputDirectory) {
         this.outputDirectory = outputDirectory;
         this.flickrTemplate = flickrTemplate;
-        this.restTemplate = flickrTemplate.getRestTemplate(); // this is used to handle downloading the images in an OAuth-complaint way
+        this.restTemplate = rt ; // this is used to handle downloading the images in an OAuth-complaint way
         Assert.notNull(flickrTemplate, "the flickrTemplate must be non-null");
         Assert.notNull(restTemplate, "the rest template must be non-null");
         Assert.notNull(outputDirectory, "you must specify a non-null output directory");
