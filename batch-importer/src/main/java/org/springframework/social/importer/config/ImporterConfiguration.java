@@ -1,5 +1,12 @@
 package org.springframework.social.importer.config;
 
+import java.sql.Driver;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.Callable;
+
+import javax.sql.DataSource;
+
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.batch.core.configuration.support.MapJobRegistry;
@@ -7,10 +14,18 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
-import org.springframework.batch.item.*;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.NonTransientResourceException;
+import org.springframework.batch.item.ParseException;
+import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.task.TaskExecutor;
@@ -23,11 +38,6 @@ import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.social.importer.FlickrImporter;
 import org.springframework.transaction.PlatformTransactionManager;
-
-import javax.sql.DataSource;
-import java.sql.Driver;
-import java.util.Date;
-import java.util.List;
 
 
 @Configuration
@@ -113,29 +123,29 @@ public class ImporterConfiguration {
         return simpleJobLauncher;
     }
 
-    public static class CommonObjectThatNeedsJobParameters {
+    public static class CommonObjectThatNeedsJobParameters implements Callable<Date> {
         private Date date;
 
         public CommonObjectThatNeedsJobParameters(Date da) {
             this.date = da;
         }
 
-        public Date getDate() {
+        public Date call() {
             return this.date;
         }
     }
 
     public static class MyItemReader implements ItemReader<String> {
-        private CommonObjectThatNeedsJobParameters sharedReference;
+        private Callable<Date> sharedReference;
 
-        public MyItemReader(CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters) {
+        public MyItemReader(Callable<Date> commonObjectThatNeedsJobParameters) {
             this.sharedReference = commonObjectThatNeedsJobParameters;
             System.out.println("the date is ");
         }
 
         @Override
         public String read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
-            return this.sharedReference.getDate().toString();
+            return this.sharedReference.call().toString();
         }
     }
 
@@ -154,7 +164,7 @@ public class ImporterConfiguration {
 
     @Bean
     @Scope("step")
-    public MyItemReader itemReader(CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters) {
+    public MyItemReader itemReader(Callable<Date> commonObjectThatNeedsJobParameters) {
         return new MyItemReader(commonObjectThatNeedsJobParameters);
     }
 
@@ -162,6 +172,5 @@ public class ImporterConfiguration {
     public MyItemWriter itemWriter() {
         return new MyItemWriter();
     }
-
 
 }
