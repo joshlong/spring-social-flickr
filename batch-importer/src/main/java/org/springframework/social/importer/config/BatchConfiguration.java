@@ -42,7 +42,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-@Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
 @ImportResource("/batch.xml")
 public class BatchConfiguration {
 
@@ -59,7 +58,6 @@ public class BatchConfiguration {
     }
 
     @Bean
-    @Inject
     public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
         DataSourceInitializer dsi = new DataSourceInitializer();
         dsi.setDataSource(dataSource);
@@ -83,7 +81,6 @@ public class BatchConfiguration {
     }
 
     @Bean
-    @Inject
     public PlatformTransactionManager transactionManager(DataSource ds) {
         return new DataSourceTransactionManager(ds);
     }
@@ -94,7 +91,6 @@ public class BatchConfiguration {
     }
 
     @Bean
-    @Inject
     public DataSource dataSource(Environment environment) {
         int port = environment.getProperty("dataSource.port", Integer.class);
         String pw = environment.getProperty("dataSource.password"),
@@ -114,7 +110,6 @@ public class BatchConfiguration {
     }
 
     @Bean
-    @Inject
     public JobRepositoryFactoryBean jobRepository(DataSource ds, PlatformTransactionManager tx) throws Exception {
         JobRepositoryFactoryBean jobRepositoryFactoryBean = new JobRepositoryFactoryBean();
         jobRepositoryFactoryBean.setDataSource(ds);
@@ -123,7 +118,6 @@ public class BatchConfiguration {
     }
 
     @Bean
-    @Inject
     public SimpleJobLauncher jobLauncher(TaskExecutor[] te, JobRepository jobRepository) throws Exception {
         SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
         simpleJobLauncher.setJobRepository(jobRepository);
@@ -136,7 +130,6 @@ public class BatchConfiguration {
     // STEP #1
     // ===================================================
     @Bean(name = "photoAlbumItemReader")
-    @Inject
     @Scope(value = "step")
     public FlickrServicePhotoAlbumItemReader photoAlbumItemReader(
             @Value("#{jobParameters['accessToken']}") String at,
@@ -148,15 +141,9 @@ public class BatchConfiguration {
         return new FlickrServicePhotoAlbumItemReader(flickrTemplate);
     }
 
-    /**
-     * basically loads the photo albums from the Flickr service
-     * and loads them into the database
-     * <p/>
-     * <CODE>insert into photo_albums(title, user_id, description,  album_id, url) values( :t, :ui, :d, :a, :u )</CODE>
-     */
+
     @Bean(name = "photoAlbumItemWriter")
-    @Inject
-    public JdbcBatchItemWriter<PhotoSet> writer(DataSource ds) {
+     public JdbcBatchItemWriter<PhotoSet> writer(DataSource ds) {
 
 
         String upsertPhotoAlbumsSql =
@@ -190,24 +177,8 @@ public class BatchConfiguration {
     }
 
 
-    // ===================================================
-    // STEP #2
-    // ===================================================
-
-
-    /**
-     * this will return all the photo_albums from the database, but
-     * it's not going to be registered in a step, instead it'll be delegated to
-     * from another {@link org.springframework.batch.item.ItemReader}
-     * which in turn will load the <em>photos</em> for each album
-     * and <em>that</em> is what's written by the step's {@link org.springframework.batch.item.ItemWriter}.
-     *
-     * @param dataSource datasource
-     * @return an item reader
-     */
     @Bean(name = "photoSetJdbcCursorItemReader")
-    @Inject
-    public JdbcCursorItemReader<PhotoSet> readPhotoAlbumsFromDatabaseItemReader(DataSource dataSource) {
+     public JdbcCursorItemReader<PhotoSet> readPhotoAlbumsFromDatabaseItemReader(DataSource dataSource) {
 
         JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader = new JdbcCursorItemReader<PhotoSet>();
         photoSetJdbcCursorItemReader.setRowMapper(new RowMapper<PhotoSet>() {
@@ -230,8 +201,7 @@ public class BatchConfiguration {
     }
 
     @Bean(name = "delegatingFlickrPhotoAlbumPhotoItemReader")
-    @Inject
-    @Scope(value = "step")
+     @Scope(value = "step")
     public DelegatingFlickrPhotoAlbumPhotoItemReader delegatingFlickrPhotoAlbumPhotoItemReader(
             @Qualifier("photoSetJdbcCursorItemReader") JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader,
             @Value("#{jobParameters['accessToken']}") String accessToken,
@@ -243,7 +213,7 @@ public class BatchConfiguration {
     }
 
     @Bean(name = "photoDetailItemWriter")
-    @Inject
+
     public JdbcBatchItemWriter<Photo> photoDetailItemWriter(DataSource ds) {
 
         String upsertSql =
@@ -284,7 +254,6 @@ public class BatchConfiguration {
      */
 
     @Bean
-    @Inject
     public JdbcCursorItemReader<Photo> photoDetailItemReader(DataSource dataSource) {
         JdbcCursorItemReader<Photo> photoSetJdbcCursorItemReader = new JdbcCursorItemReader<Photo>();
         photoSetJdbcCursorItemReader.setRowMapper(new RowMapper<Photo>() {
@@ -304,7 +273,6 @@ public class BatchConfiguration {
         return photoSetJdbcCursorItemReader;
     }
 
-    @Inject
     @Scope("step")
     @Bean(name = "photoDownloadingItemWriter")
     public ItemWriter<Photo> photoDownloadingItemWriter(

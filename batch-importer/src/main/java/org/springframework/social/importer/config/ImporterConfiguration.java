@@ -2,35 +2,24 @@ package org.springframework.social.importer.config;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.ImportResource;
-import org.springframework.core.task.TaskExecutor;
+import org.springframework.context.annotation.*;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.social.importer.FlickrImporter;
 
-import javax.inject.Inject;
-
 
 @Configuration
+@Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
 @ImportResource("/batch.xml")
 @Import(BatchConfiguration.class)
 public class ImporterConfiguration {
 
-    @Inject
-    @Qualifier("flickrImportJob")
-    private Job importFlickrPhotosJob;
-
-  @Inject
-   private JobLauncher jobLauncher;
-
     @Bean
-     @Inject
-    public FlickrImporter importer(TaskScheduler[] taskScheduler) {
-        return new FlickrImporter(this.importFlickrPhotosJob, this.jobLauncher, taskScheduler[0]);
+    public FlickrImporter importer(
+            @Qualifier("flickrImportJob")  Job importFlickrPhotosJob,
+            JobLauncher jobLauncher,
+            TaskScheduler[] taskScheduler) {
+        return new FlickrImporter(importFlickrPhotosJob, jobLauncher, taskScheduler[0]);
     }
 
 }
