@@ -124,10 +124,10 @@ public class BatchConfiguration {
 
     @Bean
     @Inject
-    public SimpleJobLauncher jobLauncher(TaskExecutor te, JobRepository jobRepository) throws Exception {
+    public SimpleJobLauncher jobLauncher(TaskExecutor [] te, JobRepository jobRepository) throws Exception {
         SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
         simpleJobLauncher.setJobRepository(jobRepository);
-        simpleJobLauncher.setTaskExecutor(te);
+        simpleJobLauncher.setTaskExecutor(te [0]);
         return simpleJobLauncher;
     }
 

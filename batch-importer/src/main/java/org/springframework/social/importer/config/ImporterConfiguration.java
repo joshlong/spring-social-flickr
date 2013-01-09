@@ -2,11 +2,13 @@ package org.springframework.social.importer.config;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportResource;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.social.importer.FlickrImporter;
 
@@ -22,13 +24,13 @@ public class ImporterConfiguration {
     @Qualifier("flickrImportJob")
     private Job importFlickrPhotosJob;
 
-    @Inject
-    private JobLauncher jobLauncher;
+  @Inject
+   private JobLauncher jobLauncher;
 
     @Bean
-    @Inject
-    public FlickrImporter importer(TaskScheduler taskScheduler) {
-        return new FlickrImporter(this.importFlickrPhotosJob, this.jobLauncher, taskScheduler);
+     @Inject
+    public FlickrImporter importer(TaskScheduler[] taskScheduler) {
+        return new FlickrImporter(this.importFlickrPhotosJob, this.jobLauncher, taskScheduler[0]);
     }
 
 }

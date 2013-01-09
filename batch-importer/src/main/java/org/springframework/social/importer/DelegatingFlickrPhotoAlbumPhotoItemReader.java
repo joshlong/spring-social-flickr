@@ -59,7 +59,6 @@ public class DelegatingFlickrPhotoAlbumPhotoItemReader implements ItemReader<Pho
 
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
-
         masterAlbumDelegate.open(executionContext);
     }
 

@@ -54,6 +54,10 @@ public class PhotoDownloadingItemWriter implements ItemWriter<Photo> {
         }
     }
 
+    /**
+     * checks to see if there's already an existing file and,
+     * if it's already there and > 0 bytes, doesn't bother.
+     */
     protected boolean shouldFileBeDownloaded(File output) {
         if (output.exists()) {
             if (output.length() == 0) {

@@ -14,9 +14,8 @@ import java.io.File;
 import java.util.Properties;
 
 /**
- * Entry point for the program. Reads in properties
- * from the Desktop (<CODE>~/Desktop/flickr.properties</CODE>), and uses them
- * to launch a <code>Job</code>.
+ * Entry point for the program. Reads in properties from the Desktop (<CODE>~/Desktop/flickr.properties</CODE>),
+ * and uses them to launch a <code>Job</code>.
  *
  * @author Josh Long
  */
@@ -51,14 +50,9 @@ public class Main {
     }
 
     /**
-     * I do this because I don't want to constantly specify the properties on the command line and I don't wan to check in
-     * the properties on github in a public repository since I'm working with my own photos.
-     * <p/>
-     * Refer to the code below to see the properties required. They are fairly self explanatory.
+     * I do this because I don't want to constantly specify the properties on the command line and I don't want
+     * to check in the properties on github in a public repository since I'm working with my own photos.
      *
-     * @param applicationContext the application context
-     * @param <T>                the exception
-     * @throws Throwable
      */
     private static <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) throws Throwable {
 

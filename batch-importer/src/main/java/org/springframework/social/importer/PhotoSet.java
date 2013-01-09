@@ -13,7 +13,7 @@ public class PhotoSet {
 
     private int countOfVideos = 0, countOfPhotos = 0;
 
-    private void setup(int cv, int cp, String url, String title, String description, String id, String userId) {
+    private void init(int cv, int cp, String url, String title, String description, String id, String userId) {
         this.userId = userId;
         this.countOfPhotos = cp;
         this.id = id;
@@ -24,11 +24,11 @@ public class PhotoSet {
     }
 
     public PhotoSet(int cv, int cp, String url, String title, String description, String id, String userId) {
-        setup(cv, cp, url, title, description, id, userId);
+        init(cv, cp, url, title, description, id, userId);
     }
 
     public PhotoSet(Photoset photoset, String userId) {
-        setup(photoset.getCountVideos(), photoset.getCountPhotos(),
+        init(photoset.getCountVideos(), photoset.getCountPhotos(),
                 photoset.getUrl(), photoset.getTitle(), photoset.getDescription(), photoset.getId(), userId);
     }
 
