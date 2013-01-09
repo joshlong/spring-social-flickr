@@ -132,16 +132,13 @@ public class ImporterConfiguration {
         }
     }
 
-    @Bean
-    @Scope("step")
-    public CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters(@Value("#{jobParameters['when']}") Date when) {
-        return new CommonObjectThatNeedsJobParameters(when);
-    }
 
     @Bean
     @Scope("step")
-    public MyItemReader itemReader(CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters) {
-        return new MyItemReader(commonObjectThatNeedsJobParameters);
+    public MyItemReader itemReader(@Value("#{jobParameters['when']}") Date when) {
+        CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters =
+                new CommonObjectThatNeedsJobParameters( when ) ;
+        return new MyItemReader( commonObjectThatNeedsJobParameters );
     }
 
     @Bean
