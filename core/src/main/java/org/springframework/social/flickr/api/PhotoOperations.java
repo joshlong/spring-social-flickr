@@ -1,5 +1,6 @@
 package org.springframework.social.flickr.api;
 
+import java.awt.image.BufferedImage;
 import java.io.File;
 
 
@@ -12,6 +13,10 @@ import java.io.File;
  * The Interface PhotoOperations.
  */
 public interface PhotoOperations {
+    /**
+     * returns a BufferedImage for the photo specified
+     */
+    BufferedImage getImage(String photoId, PhotoSizeEnum pse )    ;
 
     /**
      * Adds the tags.

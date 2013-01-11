@@ -8,9 +8,11 @@ import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.social.importer.config.BatchImporterConfiguration;
+import org.springframework.social.importer.config.MainBatchImporterConfiguration;
 import org.springframework.util.Assert;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Properties;
 
 /**
@@ -24,7 +26,7 @@ public class Main {
     public static void main(String args[]) throws Throwable {
         AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
         registerPropertiesForFlickrConnection(applicationContext);
-        applicationContext.register(BatchImporterConfiguration.class);
+        applicationContext.register( MainBatchImporterConfiguration.class);
         applicationContext.refresh();
         applicationContext.start();
 
@@ -47,21 +49,23 @@ public class Main {
 
 
     }
-
-    /**
-     * I do this because I don't want to constantly specify the properties on the command line and I don't want
-     * to check in the properties on github in a public repository since I'm working with my own photos.
-     */
-    private static <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) throws Throwable {
-
-        File propertiesFile = new File(new File(SystemUtils.getUserHome(), "Desktop"), "flickr.properties");
-        Assert.isTrue(propertiesFile.exists(), "the flickr.properties file must exist.");
-        Resource propertiesResource = new FileSystemResource(propertiesFile);
-        Properties properties = new Properties();
-        properties.load(propertiesResource.getInputStream());
-
-        PropertiesPropertySource mapPropertySource = new PropertiesPropertySource("flickr", properties);
-        applicationContext.getEnvironment().getPropertySources().addLast(mapPropertySource);
+    private static <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) {
+        try {
+            File propertiesFile = new File(SystemUtils.getUserHome(), "flickr.properties");
+            Assert.isTrue(propertiesFile.exists(),
+                    "could not find " + propertiesFile.getAbsolutePath() +
+                            ", which must exist and contain at a minimum a Flickr client ID and secret ('" +
+                            "clientId, and clientSecret) and database connection information (dataSource.user, " +
+                            "dataSource.password, dataSource.url, and dataSource.driverClassName)."
+            );
+            Resource propertiesResource = new FileSystemResource(propertiesFile);
+            Properties properties = new Properties();
+            properties.load(propertiesResource.getInputStream());
+            PropertiesPropertySource mapPropertySource = new PropertiesPropertySource("flickr", properties);
+            applicationContext.getEnvironment().getPropertySources().addLast(mapPropertySource);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

@@ -9,9 +9,28 @@ import org.springframework.social.flickr.api.Photoset;
 public class PhotoSet {
 
 
+    // these map to records in the database
     private String description, url, id, title, userId;
-
     private int countOfVideos = 0, countOfPhotos = 0;
+
+    // these are synthetic and expected to be calculated at runtime for progress updates
+    private int photosImported, photosDownloaded;
+
+    public int getPhotosImported() {
+        return photosImported;
+    }
+
+    public void setPhotosImported(int photosImported) {
+        this.photosImported = photosImported;
+    }
+
+    public int getPhotosDownloaded() {
+        return photosDownloaded;
+    }
+
+    public void setPhotosDownloaded(int photosDownloaded) {
+        this.photosDownloaded = photosDownloaded;
+    }
 
     private void init(int cv, int cp, String url, String title, String description, String id, String userId) {
         this.userId = userId;

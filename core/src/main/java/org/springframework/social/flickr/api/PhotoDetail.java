@@ -79,12 +79,16 @@ public class PhotoDetail{
 	public void setIsfavorite(boolean isfavorite){
 		this.isfavorite = isfavorite;
 	}
- 	public LicenseEnum getLicense(){
-		return this.license;
-	}
-	public void setLicense(LicenseEnum license){
-		this.license = license;
-	}
+    public void setLicense (String license ) {
+         System.out.println(license);
+    }
+    public String getLicense(){return  "" ;}
+// 	public LicenseEnum getLicense(){
+//		return this.license;
+//	}
+//	public void setLicense(LicenseEnum license){
+//		this.license = license;
+//	}
  	public String getMedia(){
 		return this.media;
 	}

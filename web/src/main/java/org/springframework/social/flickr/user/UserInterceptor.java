@@ -52,7 +52,6 @@ public final class UserInterceptor extends HandlerInterceptorAdapter {
     }
 
     // internal helpers
-
     private void rememberUser(HttpServletRequest request, HttpServletResponse response) {
         String userId = userCookieGenerator.readCookieValue(request);
         if (userId == null) {

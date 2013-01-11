@@ -13,8 +13,9 @@
         <!--
           // step one: load all the photo albums into the database
         -->
-        <step id="step1">
-            <tasklet transaction-manager="transactionManager">
+        <step id="step1" >
+
+            <tasklet  transaction-manager="transactionManager">
                 <chunk reader="photoAlbumItemReader" writer="photoAlbumItemWriter" commit-interval="10"/>
             </tasklet>
             <next on="*" to="step2"/>

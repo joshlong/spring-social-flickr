@@ -12,6 +12,7 @@ import org.springframework.social.flickr.api.Url;
 public class Photo {
 
     private String url, id, title, comments, albumId;
+    private org.springframework.social.flickr.api.Photo flickrPhoto ;// we can use this if its available
 
     protected void setup(String id, String url, String title, String comments, String albumId) {
         this.url = url;
@@ -25,9 +26,9 @@ public class Photo {
         setup(id, url, title, comments, albumId);
     }
 
-    public Photo(PhotoDetail pd, String albumId) {
-        Url u = pd.getUrls().getUrl().iterator().next();
-        setup(pd.getId(), u.get_content(), pd.getTitle(), pd.getComments(), albumId);
+    public Photo(org.springframework.social.flickr.api.Photo flickrPhoto, String id, String url, String title, String comments, String albumId) {
+        this.flickrPhoto = flickrPhoto ;
+        setup(id, url, title, comments, albumId);
     }
 
     public String getUrl() {

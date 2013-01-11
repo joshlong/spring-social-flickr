@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.social.flickr.api.Flickr;
+import org.springframework.social.flickr.api.PhotoSizeEnum;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestTemplate;
 
@@ -23,18 +24,13 @@ public class PhotoDownloadingItemWriter implements ItemWriter<Photo> {
     private Log logger = LogFactory.getLog(getClass());
 
     private File outputDirectory; // should come from job parameters
+    private Flickr  flickrTemplate ;
 
-    private Flickr flickrTemplate;
-
-    private RestTemplate restTemplate;
-
-    public PhotoDownloadingItemWriter(Flickr flickrTemplate, RestTemplate rt, File outputDirectory) {
+    public PhotoDownloadingItemWriter(Flickr flickrTemplate,  File outputDirectory) {
         this.outputDirectory = outputDirectory;
-        this.flickrTemplate = flickrTemplate;
-        this.restTemplate = rt; // this is used to handle downloading the images in an OAuth-complaint way
-        Assert.notNull(flickrTemplate, "the flickrTemplate must be non-null");
-        Assert.notNull(restTemplate, "the rest template must be non-null");
-        Assert.notNull(outputDirectory, "you must specify a non-null output directory");
+        this.flickrTemplate  = flickrTemplate ;
+         Assert.notNull(flickrTemplate, "the flickrTemplate must be non-null");
+         Assert.notNull(outputDirectory, "you must specify a non-null output directory");
         Assert.isTrue(outputDirectory.exists(), "the output directory must exist");
     }
 
@@ -46,7 +42,7 @@ public class PhotoDownloadingItemWriter implements ItemWriter<Photo> {
             File output = new File(forPhoto(p), p.getId() + ext);
             if (shouldFileBeDownloaded(output)) {
                 logger.info("downloading " + url + " to " + output.getAbsolutePath() + ".");
-                BufferedImage bi = this.restTemplate.getForObject(url, BufferedImage.class);
+                 BufferedImage  bi= flickrTemplate.photoOperations().getImage( p.getId(), PhotoSizeEnum.b) ;
                 ImageIO.write(bi, ext.substring(1), output);
             } else {
                 logger.info("not downloading " + url + " to " + output.getAbsolutePath() + " because the file already exists.");

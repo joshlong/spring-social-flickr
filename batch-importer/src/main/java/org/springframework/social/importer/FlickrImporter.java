@@ -6,11 +6,17 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.context.Lifecycle;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.util.Assert;
 
+import javax.sql.DataSource;
 import java.io.File;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,12 +35,42 @@ public class FlickrImporter implements Lifecycle {
 
     private volatile Map<File, JobExecution> mapOfFilesToRunningJobs = new ConcurrentHashMap<File, JobExecution>();
 
+    private DataSource dataSource;
+
+    private JdbcTemplate jdbcTemplate;
     private volatile TaskScheduler scheduler;
 
-    public FlickrImporter(Job importFlickrPhotosJob, JobLauncher jobLauncher, TaskScheduler s) {
+    public FlickrImporter(DataSource dataSource, Job importFlickrPhotosJob, JobLauncher jobLauncher, TaskScheduler s) {
         this.importFlickrPhotosJob = importFlickrPhotosJob;
         this.jobLauncher = jobLauncher;
+        this.dataSource = dataSource;
         this.scheduler = s;
+        this.jdbcTemplate = new JdbcTemplate(this.dataSource);
+
+    }
+
+    protected void doImportPhotosToDirectory(File file, JobParameters jp) throws Throwable {
+        Assert.notNull(file, "you must provide a non-null File object.");
+        Assert.isTrue(file.exists() || file.mkdirs(), "the " + file.getAbsolutePath() + " must exist.");
+        Assert.isTrue(file.canWrite(), "we must be able to write to " + file.getAbsolutePath() + ".");
+        JobExecution jobExecution = jobLauncher.run(this.importFlickrPhotosJob, jp);
+        this.mapOfFilesToRunningJobs.put(file, jobExecution);
+    }
+
+    /**
+     * used in a web environment when the FlickrTemplate will be
+     * injected in some other way, not relying on the
+     * runtime parameters
+     *
+     * @param out output
+     * @throws Throwable
+     */
+    public void importPhotosToDirectory(File out) throws Throwable {
+        JobParameters jp = new JobParametersBuilder()
+                .addDate("when", new Date())
+                .addString("output", out.getAbsolutePath())
+                .toJobParameters();
+        doImportPhotosToDirectory(out, jp);
     }
 
     /**
@@ -42,17 +78,7 @@ public class FlickrImporter implements Lifecycle {
      *
      * @param file the directory to which the imported photos should be written
      */
-    public void importPhotosToDirectory(
-            String at,
-            String atSecret,
-            String consumerKey,
-            String consumerSecret,
-            File file) throws Throwable {
-
-        Assert.notNull(file, "you must provide a non-null File object.");
-        Assert.isTrue(file.exists(), "the " + file.getAbsolutePath() + " must exist.");
-        Assert.isTrue(file.canWrite(), "we must be able to write to " + file.getAbsolutePath() + ".");
-
+    public void importPhotosToDirectory(String at, String atSecret, String consumerKey, String consumerSecret, File file) throws Throwable {
         JobParameters jp = new JobParametersBuilder()
                 .addDate("when", new Date())
                 .addString("accessToken", at)
@@ -61,15 +87,29 @@ public class FlickrImporter implements Lifecycle {
                 .addString("consumerSecret", consumerSecret)
                 .addString("output", file.getAbsolutePath())
                 .toJobParameters();
+        doImportPhotosToDirectory(file, jp);
+    }
 
-        JobExecution jobExecution = jobLauncher.run(this.importFlickrPhotosJob, jp);
 
-        this.mapOfFilesToRunningJobs.put(file, jobExecution);
+
+    public Collection<PhotoSet> photoSetsImportedForUser(String userId) {
+        return jdbcTemplate.query("select * from photo_albums where user_id = ?", new RowMapper<PhotoSet>() {
+            @Override
+            public PhotoSet mapRow(ResultSet rs, int rowNum) throws SQLException {
+                PhotoSet photoSet = new PhotoSet(
+                        rs.getInt("count_videos"),
+                        rs.getInt("count_photos"), rs.getString("url"),
+                        rs.getString("title"),
+                        rs.getString("description"),
+                        rs.getString("album_id"), rs.getString("user_id")
+                );
+                return photoSet;
+            }
+        }, userId);
     }
 
     /**
      * tests to see if any jobs can be removed and, if so, does.
-     *
      */
     public static class JobCleanupRunnable implements Runnable {
 

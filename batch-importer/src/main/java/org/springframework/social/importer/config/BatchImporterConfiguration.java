@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.http.converter.BufferedImageHttpMessageConverter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -41,25 +40,24 @@ import java.util.Map;
 
 @Configuration
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
-@ImportResource("/batch.xml")
+@ImportResource("classpath:/batch.xml")
 public class BatchImporterConfiguration {
 
     @Bean
-    public FlickrImporter importer(
+    public FlickrImporter importer(     DataSource dataSource ,
             @Qualifier("flickrImportJob") Job importFlickrPhotosJob,
             JobLauncher jobLauncher,
             TaskScheduler[] taskScheduler) {
-        return new FlickrImporter(importFlickrPhotosJob, jobLauncher, taskScheduler[0]);
+        return new FlickrImporter( dataSource,importFlickrPhotosJob, jobLauncher, taskScheduler[0]);
+    }
+
+    @Bean public TaskScheduler taskScheduler(){
+        return new ConcurrentTaskScheduler() ;
     }
 
     @Bean
     public TaskExecutor taskExecutor() {
         return new ConcurrentTaskExecutor();
-    }
-
-    @Bean
-    public TaskScheduler taskScheduler() {
-        return new ConcurrentTaskScheduler();
     }
 
     @Bean
@@ -106,10 +104,9 @@ public class BatchImporterConfiguration {
     }
 
     @Bean
-    public SimpleJobLauncher jobLauncher(TaskExecutor[] te, JobRepository jobRepository) throws Exception {
+    public SimpleJobLauncher jobLauncher( JobRepository jobRepository) throws Exception {
         SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
         simpleJobLauncher.setJobRepository(jobRepository);
-        simpleJobLauncher.setTaskExecutor(te[0]);
         return simpleJobLauncher;
     }
 
@@ -119,9 +116,7 @@ public class BatchImporterConfiguration {
     // ===================================================
     @Bean(name = "photoAlbumItemReader")
     @Scope(value = "step")
-    public FlickrServicePhotoAlbumItemReader photoAlbumItemReader(
-            Flickr flickr
-    ) throws Throwable {
+    public FlickrServicePhotoAlbumItemReader photoAlbumItemReader(Flickr flickr) throws Throwable {
         return new FlickrServicePhotoAlbumItemReader(flickr);
     }
 
@@ -241,18 +236,9 @@ public class BatchImporterConfiguration {
     @Scope("step")
     @Bean(name = "photoDownloadingItemWriter")
     public PhotoDownloadingItemWriter photoDownloadingItemWriter(@Value("#{jobParameters['output']}") String outputPath, Flickr flickrTemplate) {
-        FlickrTemplate flickrTemplate1 = (FlickrTemplate) flickrTemplate;
-        return new PhotoDownloadingItemWriter(flickrTemplate, flickrTemplate1.getRestTemplate(), new File(outputPath));
+        //FlickrTemplate flickrTemplate1 = (FlickrTemplate) flickrTemplate;
+        return new PhotoDownloadingItemWriter(flickrTemplate,   new File(outputPath));
     }
 
-    @Bean
-    @Scope("step")
-    public Flickr flickrTemplate(@Value("#{jobParameters['accessToken']}") String accessToken,
-                                 @Value("#{jobParameters['accessTokenSecret']}") String atSecret,
-                                 @Value("#{jobParameters['consumerKey']}") String consumerKey,
-                                 @Value("#{jobParameters['consumerSecret']}") String consumerSecret) {
-        FlickrTemplate ft = new FlickrTemplate(consumerKey, consumerSecret, accessToken, atSecret);
-        ft.getRestTemplate().getMessageConverters().add(new BufferedImageHttpMessageConverter());
-        return ft;
-    }
+
 }
