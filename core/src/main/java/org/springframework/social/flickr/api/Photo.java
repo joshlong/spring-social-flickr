@@ -2,185 +2,200 @@ package org.springframework.social.flickr.api;
 
 import java.util.ArrayList;
 
-public class Photo extends Extras{
-	String id;
-	String owner;
-	String secret;
-	String server;
-	String farm;
-	String title;
-	boolean isPublic;
-	boolean isFriend;
-	boolean isFamily;
-	boolean isFaved;
-	String thumb;
-	String media;
-	String url;
-	String page;
-	String pages;
-	String perpage;
-	String total;
-	String dateFaved;
-	ArrayList<Person2> person2; //Persons who favorited this photo
+public class Photo extends Extras {
+    String id;
+    String owner;
+    String secret;
+    String server;
+    String farm;
+    String title;
+    boolean isPublic;
+    boolean isFriend;
+    String isPrimary;
+    boolean isFamily;
+    boolean isFaved;
+    String thumb;
+    String media;
+    String url;
+    String page;
+    String pages;
+    String perpage;
+    String total;
+    String dateFaved;
+    ArrayList<Person2> person2; //Persons who favorited this photo
 
-	public String getId() {
-		return id;
-	}
 
-	public void setId(String id) {
-		this.id = id;
-	}
+    public String getId() {
+        return id;
+    }
 
-	public String getTitle() {
-		return title;
-	}
+    public void setId(String id) {
+        this.id = id;
+    }
 
-	public void setTitle(String title) {
-		this.title = title;
-	}
+    public String getTitle() {
+        return title;
+    }
 
-	public String getOwner() {
-		return owner;
-	}
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-	public void setOwner(String owner) {
-		this.owner = owner;
-	}
+    public String getOwner() {
+        return owner;
+    }
 
-	public String getSecret() {
-		return secret;
-	}
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
 
-	public void setSecret(String secret) {
-		this.secret = secret;
-	}
+    public String getSecret() {
+        return secret;
+    }
 
-	public String getServer() {
-		return server;
-	}
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
 
-	public void setServer(String server) {
-		this.server = server;
-	}
+    public String getServer() {
+        return server;
+    }
 
-	public String getFarm() {
-		return farm;
-	}
+    public void setServer(String server) {
+        this.server = server;
+    }
 
-	public void setFarm(String farm) {
-		this.farm = farm;
-	}
+    public String getFarm() {
+        return farm;
+    }
 
-	public boolean isPublic() {
-		return isPublic;
-	}
+    public void setFarm(String farm) {
+        this.farm = farm;
+    }
 
-	public void setPublic(boolean isPublic) {
-		this.isPublic = isPublic;
-	}
+    public boolean isPublic() {
+        return isPublic;
+    }
 
-	public boolean isFriend() {
-		return isFriend;
-	}
+    public void setPublic(boolean isPublic) {
+        this.isPublic = isPublic;
+    }
 
-	public void setFriend(boolean isFriend) {
-		this.isFriend = isFriend;
-	}
 
-	public boolean isFamily() {
-		return isFamily;
-	}
+    private boolean is_primary;
 
-	public void setFamily(boolean isFamily) {
-		this.isFamily = isFamily;
-	}
+    public void setIsPrimary(String b) {
+        if (b != null && b != "" && (b.equals("1") || b.equals("true")))
+            is_primary = true;
+        else is_primary = false;
+    }
 
-	public void setUrl(String url) {
-		this.url = url;
-	}
+    public boolean getIsPrimary() {
+        return this.is_primary;
+    }
 
-	public String getUrl() {
-		String tempUrl = "http://farm"+getFarm()+".staticflickr.com/"+getServer()+"/"+getId()+"_"+getSecret()+".jpg";
-		url = tempUrl;
-		return url;
-	}
+    public boolean isFriend() {
+        return isFriend;
+    }
 
-	public String getUrl(PhotoSizeEnum size) {
-		String tempUrl = "http://farm"+getFarm()+".staticflickr.com/"+getServer()+"/"+getId()+"_"+getSecret()+"_"+size+".jpg";
-		url = tempUrl;
-		return url;
-	}
+    public void setFriend(boolean isFriend) {
+        this.isFriend = isFriend;
+    }
 
-	public ArrayList<Person2> getPerson2() {
-		return person2;
-	}
+    public boolean isFamily() {
+        return isFamily;
+    }
 
-	public void setPerson2(ArrayList<Person2> person2) {
-		this.person2 = person2;
-	}
+    public void setFamily(boolean isFamily) {
+        this.isFamily = isFamily;
+    }
 
-	public String getPage() {
-		return page;
-	}
+    public void setUrl(String url) {
+        this.url = url;
+    }
 
-	public void setPage(String page) {
-		this.page = page;
-	}
+    public String getUrl() {
+        String tempUrl = "http://farm" + getFarm() + ".staticflickr.com/" + getServer() + "/" + getId() + "_" + getSecret() + ".jpg";
+        url = tempUrl;
+        return url;
+    }
 
-	public String getPages() {
-		return pages;
-	}
+    public String getUrl(PhotoSizeEnum size) {
+        String tempUrl = "http://farm" + getFarm() + ".staticflickr.com/" + getServer() + "/" + getId() + "_" + getSecret() + "_" + size + ".jpg";
+        url = tempUrl;
+        return url;
+    }
 
-	public void setPages(String pages) {
-		this.pages = pages;
-	}
+    public ArrayList<Person2> getPerson2() {
+        return person2;
+    }
 
-	public String getPerpage() {
-		return perpage;
-	}
+    public void setPerson2(ArrayList<Person2> person2) {
+        this.person2 = person2;
+    }
 
-	public void setPerpage(String perpage) {
-		this.perpage = perpage;
-	}
+    public String getPage() {
+        return page;
+    }
 
-	public String getTotal() {
-		return total;
-	}
+    public void setPage(String page) {
+        this.page = page;
+    }
 
-	public void setTotal(String total) {
-		this.total = total;
-	}
+    public String getPages() {
+        return pages;
+    }
 
-	public boolean isFaved() {
-		return isFaved;
-	}
+    public void setPages(String pages) {
+        this.pages = pages;
+    }
 
-	public void setFaved(boolean isFaved) {
-		this.isFaved = isFaved;
-	}
+    public String getPerpage() {
+        return perpage;
+    }
 
-	public String getThumb() {
-		return thumb;
-	}
+    public void setPerpage(String perpage) {
+        this.perpage = perpage;
+    }
 
-	public void setThumb(String thumb) {
-		this.thumb = thumb;
-	}
+    public String getTotal() {
+        return total;
+    }
 
-	public String getMedia() {
-		return media;
-	}
+    public void setTotal(String total) {
+        this.total = total;
+    }
 
-	public void setMedia(String media) {
-		this.media = media;
-	}
+    public boolean isFaved() {
+        return isFaved;
+    }
 
-	public String getDateFaved() {
-		return dateFaved;
-	}
+    public void setFaved(boolean isFaved) {
+        this.isFaved = isFaved;
+    }
 
-	public void setDateFaved(String dateFaved) {
-		this.dateFaved = dateFaved;
-	}
+    public String getThumb() {
+        return thumb;
+    }
+
+    public void setThumb(String thumb) {
+        this.thumb = thumb;
+    }
+
+    public String getMedia() {
+        return media;
+    }
+
+    public void setMedia(String media) {
+        this.media = media;
+    }
+
+    public String getDateFaved() {
+        return dateFaved;
+    }
+
+    public void setDateFaved(String dateFaved) {
+        this.dateFaved = dateFaved;
+    }
 
 }

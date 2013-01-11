@@ -1,4 +1,4 @@
-package org.springframework.social.importer;
+package org.springframework.social.importer.batch;
 
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.NonTransientResourceException;
@@ -7,14 +7,17 @@ import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.social.flickr.api.*;
 import org.springframework.social.flickr.api.impl.FlickrTemplate;
+import org.springframework.social.importer.model.PhotoSet;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Reads the
+ * loads the data about the photo albums from flickr
+ *
+ * @author Josh Long
  */
-public class FlickrServicePhotoAlbumItemReader implements ItemReader<PhotoSet>, InitializingBean {
+public class PhotoSetItemReader implements ItemReader<PhotoSet>, InitializingBean {
 
     private Flickr flickrTemplate;
     private Person person;
@@ -22,7 +25,7 @@ public class FlickrServicePhotoAlbumItemReader implements ItemReader<PhotoSet>, 
     private PhotosetOperations photosetOperations;
     private String userId;
 
-    public FlickrServicePhotoAlbumItemReader(Flickr flickrTemplate) {
+    public PhotoSetItemReader(Flickr flickrTemplate) {
         this.flickrTemplate = flickrTemplate;
         this.photosetOperations = this.flickrTemplate.photosetOperations();
         this.person = this.flickrTemplate.peopleOperations().getPersonProfile();
@@ -35,7 +38,8 @@ public class FlickrServicePhotoAlbumItemReader implements ItemReader<PhotoSet>, 
         if (null == og)
             return null;
 
-        return new PhotoSet(this.photosetOperations.getInfo(og.getId()), userId);
+        Photoset ps =  this.photosetOperations.getInfo(og.getId()) ;
+        return new PhotoSet(  ps , userId);
     }
 
     public void setFlickrTemplate(FlickrTemplate flickrTemplate) {

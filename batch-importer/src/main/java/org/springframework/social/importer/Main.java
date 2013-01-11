@@ -40,12 +40,13 @@ public class Main {
                             "output photos, but we could not create it!.");
         }
 
-        String clientId = environment.getProperty("clientId"),
+        String  userId =environment.getProperty("userId"),
+                clientId = environment.getProperty("clientId"),
                 clientSecret = environment.getProperty("clientSecret"),
                 accessToken = environment.getProperty("accessToken"),
                 accessTokenSecret = environment.getProperty("accessTokenSecret");
 
-        flickrImporter.importPhotosToDirectory(accessToken, accessTokenSecret, clientId, clientSecret, output);
+        flickrImporter.importPhotosToDirectory( userId,accessToken, accessTokenSecret, clientId, clientSecret, output);
 
 
     }

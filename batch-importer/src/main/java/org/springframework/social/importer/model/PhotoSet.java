@@ -1,4 +1,4 @@
-package org.springframework.social.importer;
+package org.springframework.social.importer.model;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.social.flickr.api.Photoset;
@@ -47,6 +47,7 @@ public class PhotoSet {
     }
 
     public PhotoSet(Photoset photoset, String userId) {
+
         init(photoset.getCountVideos(), photoset.getCountPhotos(),
                 photoset.getUrl(), photoset.getTitle(), photoset.getDescription(), photoset.getId(), userId);
     }

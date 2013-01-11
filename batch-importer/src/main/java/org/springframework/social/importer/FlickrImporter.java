@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
+import org.springframework.social.importer.model.PhotoSet;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
@@ -65,10 +66,11 @@ public class FlickrImporter implements Lifecycle {
      * @param out output
      * @throws Throwable
      */
-    public void importPhotosToDirectory(File out) throws Throwable {
+    public void importPhotosToDirectory( String userId,File out) throws Throwable {
         JobParameters jp = new JobParametersBuilder()
                 .addDate("when", new Date())
                 .addString("output", out.getAbsolutePath())
+                .addString("userId", userId)
                 .toJobParameters();
         doImportPhotosToDirectory(out, jp);
     }
@@ -78,10 +80,11 @@ public class FlickrImporter implements Lifecycle {
      *
      * @param file the directory to which the imported photos should be written
      */
-    public void importPhotosToDirectory(String at, String atSecret, String consumerKey, String consumerSecret, File file) throws Throwable {
+    public void importPhotosToDirectory( String userId,String at, String atSecret, String consumerKey, String consumerSecret, File file) throws Throwable {
         JobParameters jp = new JobParametersBuilder()
                 .addDate("when", new Date())
                 .addString("accessToken", at)
+                .addString("userId", userId)
                 .addString("accessTokenSecret", atSecret)
                 .addString("consumerKey", consumerKey)
                 .addString("consumerSecret", consumerSecret)
@@ -93,16 +96,20 @@ public class FlickrImporter implements Lifecycle {
 
 
     public Collection<PhotoSet> photoSetsImportedForUser(String userId) {
-        return jdbcTemplate.query("select * from photo_albums where user_id = ?", new RowMapper<PhotoSet>() {
+        String q = " select  ( select  count(*) FRom photos p where p.album_id = pa.album_id) as photos_imported , ( select  count(*) FRom photos p where downloaded is not null and p.album_id = pa.album_id) as photos_downloaded , pa.* from photo_albums  pa  where user_id = ?" ;
+        return jdbcTemplate.query( q, new RowMapper<PhotoSet>() {
             @Override
             public PhotoSet mapRow(ResultSet rs, int rowNum) throws SQLException {
                 PhotoSet photoSet = new PhotoSet(
                         rs.getInt("count_videos"),
-                        rs.getInt("count_photos"), rs.getString("url"),
+                        rs.getInt("count_photos"),
+                        rs.getString("url"),
                         rs.getString("title"),
                         rs.getString("description"),
                         rs.getString("album_id"), rs.getString("user_id")
                 );
+                photoSet.setPhotosImported( rs.getInt("photos_imported"));
+                photoSet.setPhotosDownloaded(rs.getInt("photos_downloaded"));
                 return photoSet;
             }
         }, userId);
