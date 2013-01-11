@@ -66,7 +66,7 @@ public class FlickrImporter implements Lifecycle {
      * @param out output
      * @throws Throwable
      */
-    public void importPhotosToDirectory( String userId,File out) throws Throwable {
+    public void importPhotosToDirectory(String userId, File out) throws Throwable {
         JobParameters jp = new JobParametersBuilder()
                 .addDate("when", new Date())
                 .addString("output", out.getAbsolutePath())
@@ -80,7 +80,7 @@ public class FlickrImporter implements Lifecycle {
      *
      * @param file the directory to which the imported photos should be written
      */
-    public void importPhotosToDirectory( String userId,String at, String atSecret, String consumerKey, String consumerSecret, File file) throws Throwable {
+    public void importPhotosToDirectory(String userId, String at, String atSecret, String consumerKey, String consumerSecret, File file) throws Throwable {
         JobParameters jp = new JobParametersBuilder()
                 .addDate("when", new Date())
                 .addString("accessToken", at)
@@ -94,21 +94,22 @@ public class FlickrImporter implements Lifecycle {
     }
 
 
-
     public Collection<PhotoSet> photoSetsImportedForUser(String userId) {
-        String q = " select  ( select  count(*) FRom photos p where p.album_id = pa.album_id) as photos_imported , ( select  count(*) FRom photos p where downloaded is not null and p.album_id = pa.album_id) as photos_downloaded , pa.* from photo_albums  pa  where user_id = ?" ;
-        return jdbcTemplate.query( q, new RowMapper<PhotoSet>() {
+        String q = "select   (select pp.url from  photos pp where pp.is_primary = true and pp.album_id= pa.album_id) as primary_url, ( select  count(*) from photos p where p.album_id = pa.album_id) as photos_imported , \n" +
+                "( select  count(*) FRom photos p where downloaded is not null and p.album_id = pa.album_id) as photos_downloaded , pa.* from photo_albums  pa  " +
+                " where user_id = ?";
+        return jdbcTemplate.query(q, new RowMapper<PhotoSet>() {
             @Override
             public PhotoSet mapRow(ResultSet rs, int rowNum) throws SQLException {
                 PhotoSet photoSet = new PhotoSet(
                         rs.getInt("count_videos"),
                         rs.getInt("count_photos"),
-                        rs.getString("url"),
+                        rs.getString("primary_url"),
                         rs.getString("title"),
                         rs.getString("description"),
                         rs.getString("album_id"), rs.getString("user_id")
                 );
-                photoSet.setPhotosImported( rs.getInt("photos_imported"));
+                photoSet.setPhotosImported(rs.getInt("photos_imported"));
                 photoSet.setPhotosDownloaded(rs.getInt("photos_downloaded"));
                 return photoSet;
             }
