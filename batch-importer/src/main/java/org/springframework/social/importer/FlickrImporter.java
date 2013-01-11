@@ -54,7 +54,7 @@ public class FlickrImporter implements Lifecycle {
         Assert.isTrue(file.canWrite(), "we must be able to write to " + file.getAbsolutePath() + ".");
 
         JobParameters jp = new JobParametersBuilder()
-                .addDate("when" , new Date())
+                .addDate("when", new Date())
                 .addString("accessToken", at)
                 .addString("accessTokenSecret", atSecret)
                 .addString("consumerKey", consumerKey)
@@ -69,8 +69,7 @@ public class FlickrImporter implements Lifecycle {
 
     /**
      * tests to see if any jobs can be removed and, if so, does.
-     * <p/>
-     * todo we should re-work this in terms of {@link java.lang.ref.WeakReference weak references} and {@link java.util.WeakHashMap weak hash map}.
+     *
      */
     public static class JobCleanupRunnable implements Runnable {
 
@@ -82,10 +81,9 @@ public class FlickrImporter implements Lifecycle {
 
         @Override
         public void run() {
-            for (Map.Entry<File, JobExecution> e : executionMap.entrySet())
-                if (!e.getValue().isRunning())
-                    executionMap.remove(e.getKey());
-
+            for (Map.Entry<File, JobExecution> entry : executionMap.entrySet())
+                if (!entry.getValue().isRunning())
+                    executionMap.remove(entry.getKey());
         }
     }
 
@@ -104,7 +102,6 @@ public class FlickrImporter implements Lifecycle {
         for (JobExecution jobExecution : this.mapOfFilesToRunningJobs.values()) {
             jobExecution.stop();
         }
-
     }
 
     @Override

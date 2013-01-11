@@ -7,7 +7,6 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.converter.BufferedImageHttpMessageConverter;
 import org.springframework.jdbc.core.RowMapper;
@@ -23,8 +21,6 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
-import org.springframework.jdbc.datasource.init.DataSourceInitializer;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
@@ -46,8 +42,7 @@ import java.util.Map;
 @Configuration
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
 @ImportResource("/batch.xml")
-@Import(BatchConfiguration.class)
-public class ImporterConfiguration {
+public class BatchImporterConfiguration {
 
     @Bean
     public FlickrImporter importer(
@@ -57,8 +52,6 @@ public class ImporterConfiguration {
         return new FlickrImporter(importFlickrPhotosJob, jobLauncher, taskScheduler[0]);
     }
 
-    private boolean shouldCreateTables = false;
-
     @Bean
     public TaskExecutor taskExecutor() {
         return new ConcurrentTaskExecutor();
@@ -67,22 +60,6 @@ public class ImporterConfiguration {
     @Bean
     public TaskScheduler taskScheduler() {
         return new ConcurrentTaskScheduler();
-    }
-
-    @Bean
-    public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
-        DataSourceInitializer dsi = new DataSourceInitializer();
-        dsi.setDataSource(dataSource);
-        ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
-        String[] scripts = "/batch_%s.sql,/photos_%s.sql".split(",");
-        String scriptSuffix = "pg";
-        for (String s : scripts) {
-            ClassPathResource classPathResource = new ClassPathResource(String.format(s, scriptSuffix));
-            resourceDatabasePopulator.addScript(classPathResource);
-        }
-        dsi.setDatabasePopulator(resourceDatabasePopulator);
-        dsi.setEnabled(this.shouldCreateTables);
-        return dsi;
     }
 
     @Bean
@@ -104,9 +81,11 @@ public class ImporterConfiguration {
 
     @Bean
     public DataSource dataSource(Environment environment) {
+
         String pw = environment.getProperty("dataSource.password"),
                 user = environment.getProperty("dataSource.user"),
                 url = environment.getProperty("dataSource.url");
+
         Class<Driver> classOfDs = environment.getPropertyAsClass("dataSource.driverClassName", Driver.class);
 
         SimpleDriverDataSource dataSource = new SimpleDriverDataSource();

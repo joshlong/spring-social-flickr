@@ -6,7 +6,6 @@ import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.flickr.api.MediaEnum;
 import org.springframework.social.flickr.api.PhotoSizeEnum;
 import org.springframework.social.flickr.api.Photoset;
-import org.springframework.social.flickr.api.impl.FlickrTemplate;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -33,7 +32,7 @@ public class DelegatingFlickrPhotoAlbumPhotoItemReader implements ItemReader<Pho
     public Photo read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
 
         // if theres nothing in the photo collection...
-        if (photoCollection.isEmpty() ) {
+        if (photoCollection.isEmpty()) {
 
             // then load a PhotoSet
             photoSet = this.masterAlbumDelegate.read();

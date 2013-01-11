@@ -1,6 +1,5 @@
 package org.springframework.social.importer;
 
-import org.apache.log4j.Logger;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.NonTransientResourceException;
 import org.springframework.batch.item.ParseException;
@@ -12,10 +11,12 @@ import org.springframework.social.flickr.api.impl.FlickrTemplate;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+/**
+ * Reads the
+ */
 public class FlickrServicePhotoAlbumItemReader implements ItemReader<PhotoSet>, InitializingBean {
 
-    private Logger logger = Logger.getLogger(getClass());
-    private Flickr  flickrTemplate;
+    private Flickr flickrTemplate;
     private Person person;
     private Queue<Photoset> photoSets = new ConcurrentLinkedQueue<Photoset>();
     private PhotosetOperations photosetOperations;

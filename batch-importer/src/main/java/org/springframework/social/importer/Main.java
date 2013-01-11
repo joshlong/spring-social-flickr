@@ -7,7 +7,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.social.importer.config.ImporterConfiguration;
+import org.springframework.social.importer.config.BatchImporterConfiguration;
 import org.springframework.util.Assert;
 
 import java.io.File;
@@ -24,7 +24,7 @@ public class Main {
     public static void main(String args[]) throws Throwable {
         AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
         registerPropertiesForFlickrConnection(applicationContext);
-        applicationContext.register(ImporterConfiguration.class);
+        applicationContext.register(BatchImporterConfiguration.class);
         applicationContext.refresh();
         applicationContext.start();
 
@@ -51,7 +51,6 @@ public class Main {
     /**
      * I do this because I don't want to constantly specify the properties on the command line and I don't want
      * to check in the properties on github in a public repository since I'm working with my own photos.
-     *
      */
     private static <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) throws Throwable {
 
