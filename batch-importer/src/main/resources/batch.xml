@@ -43,8 +43,7 @@
             <tasklet transaction-manager="transactionManager">
                 <chunk reader="photoDetailItemReader"
                        processor="photoDownloadingItemProcessor"
-                       processor-transactional="true"
-                       writer="photoDownloadedAcknowledgingItemWriter" commit-interval="20"/>
+                       writer="photoDownloadedAcknowledgingItemWriter" commit-interval="5"/>
             </tasklet>
         </step>
 

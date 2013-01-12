@@ -53,10 +53,6 @@ CREATE TABLE photo_albums
 --
 -- used to hold individual photos
 --
-
---
--- used to hold individual photos
---
 CREATE TABLE photos
 (
   id serial NOT NULL,
@@ -64,12 +60,13 @@ CREATE TABLE photos
   photo_id character varying(300) NOT NULL,
   title character varying(300),
   url character varying(300) NOT NULL,
-  downloaded date null ,
-  is_primary bool  not null default  false  ,
+  thumb_url character varying(300) NOT NULL,
+  downloaded date,
+  is_primary boolean not null default false ,
   comments character varying(300),
   CONSTRAINT photos_pkey PRIMARY KEY (id ),
   CONSTRAINT photo_album_fk FOREIGN KEY (album_id)
       REFERENCES photo_albums (album_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE NO ACTION,
   CONSTRAINT photo_album_photo UNIQUE (album_id , photo_id )
-) ;
+);

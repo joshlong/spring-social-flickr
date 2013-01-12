@@ -44,7 +44,6 @@ public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo>, Ite
                 return null;
 
 
-
             // if there is a PhotoSet, then load its PhotoDetails
             Photoset photosSet = flickrTemplate.photosetOperations().getPhotos(photoSet.getId(), null, null, null, null, MediaEnum.PHOTOS);
             for (org.springframework.social.flickr.api.Photo p : photosSet.getPhoto()) {
@@ -59,7 +58,7 @@ public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo>, Ite
 
 
         // downloads the 'large' image
-        return new Photo(photo.getId(), photo.getIsPrimary(),  photo.getUrl(PhotoSizeEnum.b), photo.getTitle(), null, photoSet.getId());
+        return new Photo(photo.getId(), photo.getIsPrimary(), photo.getUrl(PhotoSizeEnum.b), photo.getUrl(PhotoSizeEnum.s), photo.getTitle(), null, photoSet.getId());
     }
 
     @Override

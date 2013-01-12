@@ -10,7 +10,7 @@ public class PhotoSet {
 
 
     // these map to records in the database
-    private String description, url, id, title, userId;
+    private String description, primaryImageUrl, id, title, userId;
     private int countOfVideos = 0, countOfPhotos = 0;
 
     // these are synthetic and expected to be calculated at runtime for progress updates
@@ -18,6 +18,10 @@ public class PhotoSet {
 
     public int getPhotosImported() {
         return photosImported;
+    }
+
+    public String getPrimaryImageUrl() {
+        return primaryImageUrl;
     }
 
     public void setPhotosImported(int photosImported) {
@@ -32,24 +36,23 @@ public class PhotoSet {
         this.photosDownloaded = photosDownloaded;
     }
 
-    private void init(int cv, int cp, String url, String title, String description, String id, String userId) {
+    private void init(int cv, int cp,  String title, String description, String id, String userId) {
         this.userId = userId;
         this.countOfPhotos = cp;
         this.id = id;
         this.description = StringUtils.isEmpty(description) ? "" : description;
-        this.url = url;
         this.title = title;
         this.countOfVideos = cv;
     }
 
-    public PhotoSet(int cv, int cp, String url, String title, String description, String id, String userId) {
-        init(cv, cp, url, title, description, id, userId);
+    public PhotoSet(int cv, int cp, String primaryImageUrl, String title, String description, String id, String userId) {
+        init(cv, cp,   title, description, id, userId);
+        this.primaryImageUrl = primaryImageUrl;
     }
 
     public PhotoSet(Photoset photoset, String userId) {
-
         init(photoset.getCountVideos(), photoset.getCountPhotos(),
-                photoset.getUrl(), photoset.getTitle(), photoset.getDescription(), photoset.getId(), userId);
+                  photoset.getTitle(), photoset.getDescription(), photoset.getId(), userId);
     }
 
     public String getDescription() {
@@ -64,9 +67,6 @@ public class PhotoSet {
         return countOfVideos;
     }
 
-    public String getUrl() {
-        return url;
-    }
 
     public String getTitle() {
         return title;

@@ -95,9 +95,7 @@ public class FlickrImporter implements Lifecycle {
 
 
     public Collection<PhotoSet> photoSetsImportedForUser(String userId) {
-        String q = "select   (select pp.url from  photos pp where pp.is_primary = true and pp.album_id= pa.album_id) as primary_url, ( select  count(*) from photos p where p.album_id = pa.album_id) as photos_imported , \n" +
-                "( select  count(*) FRom photos p where downloaded is not null and p.album_id = pa.album_id) as photos_downloaded , pa.* from photo_albums  pa  " +
-                " where user_id = ?";
+        String q = " select   (select pp.thumb_url from  photos pp where pp.is_primary = true and pp.album_id= pa.album_id) as primary_url,  ( select  count(*) from photos p where p.album_id = pa.album_id) as photos_imported ,   ( select  count(*) FRom photos p where downloaded is not null and p.album_id = pa.album_id) as photos_downloaded , pa.* from photo_albums  pa where user_id = ?";
         return jdbcTemplate.query(q, new RowMapper<PhotoSet>() {
             @Override
             public PhotoSet mapRow(ResultSet rs, int rowNum) throws SQLException {

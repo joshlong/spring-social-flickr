@@ -28,8 +28,8 @@ import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.importer.FlickrImporter;
 import org.springframework.social.importer.batch.DelegatingPhotoSetPhotoItemReader;
-import org.springframework.social.importer.batch.PhotoSetItemReader;
 import org.springframework.social.importer.batch.PhotoDownloadingItemProcessor;
+import org.springframework.social.importer.batch.PhotoSetItemReader;
 import org.springframework.social.importer.model.Photo;
 import org.springframework.social.importer.model.PhotoSet;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -150,7 +150,7 @@ public class BatchImporterConfiguration {
                         .addValue("a", item.getId())
                         .addValue("cv", item.getCountOfVideos(), Types.INTEGER)
                         .addValue("cp", item.getCountOfPhotos(), Types.INTEGER)
-                        .addValue("u", item.getUrl());
+                        .addValue("u", item.getPrimaryImageUrl());
             }
         });
         return jdbcBatchItemWriter;
@@ -166,7 +166,7 @@ public class BatchImporterConfiguration {
                 return new PhotoSet(
                         resultSet.getInt("count_videos"),
                         resultSet.getInt("count_photos"),
-                        resultSet.getString("url"),
+                        null,
                         resultSet.getString("title"),
                         resultSet.getString("description"),
                         resultSet.getString("album_id"),
@@ -188,17 +188,7 @@ public class BatchImporterConfiguration {
     @Bean(name = "photoDetailItemWriter")
     public JdbcBatchItemWriter<Photo> photoDetailItemWriter(DataSource ds) {
 
-        String upsertSql =
-                "with new_values (is_primary,photo_id, url, comments, album_id) as ( " +
-                        " values ( :ip, :p, :u, :c, :a)  ), " +
-                        "upsert as " +
-                        "( update photos p set is_primary=nv.is_primary, photo_id=nv.photo_id, url=nv.url,  comments= nv.comments,   album_id= nv.album_id   " +
-                        "    FROM new_values nv WHERE p.photo_id = nv.photo_id RETURNING p.*  ) " +
-                        " insert into photos( is_primary, photo_id,url,comments,album_id)   " +
-                        "SELECT nv.* FROM new_values nv " +
-                        "WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.photo_id = nv.photo_id )";
-
-
+        String upsertSql = " with new_values ( is_primary,photo_id,thumb_url,url,comments,album_id ) as (  values (  :is_primary,:photo_id,:thumb_url,:url,:comments,:album_id )  ),  upsert as ( update photos p set    is_primary = nv.is_primary,photo_id = nv.photo_id,thumb_url = nv.thumb_url,url = nv.url,comments = nv.comments,album_id = nv.album_id  FROM new_values nv WHERE p.photo_id = nv.photo_id RETURNING p.*  )  insert into photos( is_primary,photo_id,thumb_url,url,comments,album_id )  SELECT  nv.* FROM new_values nv WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.photo_id = nv.photo_id ) ";
         JdbcBatchItemWriter<Photo> photoDetailJdbcBatchItemWriter = new JdbcBatchItemWriter<Photo>();
         photoDetailJdbcBatchItemWriter.setDataSource(ds);
         photoDetailJdbcBatchItemWriter.setAssertUpdates(false);
@@ -207,11 +197,12 @@ public class BatchImporterConfiguration {
             @Override
             public SqlParameterSource createSqlParameterSource(Photo item) {
                 Map<String, Object> params = new HashMap<String, Object>();
-                params.put("p", item.getId());
-                params.put("ip",item.isPrimary()) ;
-                params.put("u", item.getUrl());
-                params.put("c", item.getComments());
-                params.put("a", item.getAlbumId());
+                params.put("photo_id", item.getId());
+                params.put("is_primary", item.isPrimary());
+                params.put("thumb_url", item.getThumbnailUrl());
+                params.put("url", item.getUrl());
+                params.put("comments", item.getComments());
+                params.put("album_id", item.getAlbumId());
                 return new MapSqlParameterSource(params);
             }
         });
@@ -230,7 +221,7 @@ public class BatchImporterConfiguration {
                 return new Photo(
                         resultSet.getString("photo_id"),
                         resultSet.getBoolean("is_primary"),
-                        resultSet.getString("url"),
+                        resultSet.getString("url"), resultSet.getString("thumb_url"),
                         resultSet.getString("title"),
                         resultSet.getString("comments"),
                         resultSet.getString("album_id")

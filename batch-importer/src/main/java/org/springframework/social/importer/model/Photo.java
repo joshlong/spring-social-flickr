@@ -11,26 +11,35 @@ import org.springframework.social.flickr.api.Url;
  */
 public class Photo {
 
-    private String url, id, title, comments, albumId;
+    private String url, thumbnailUrl, id, title, comments, albumId;
     private boolean primary ;
     private org.springframework.social.flickr.api.Photo flickrPhoto ;// we can use this if its available
 
-    protected void setup(String id,  boolean p,String url, String title, String comments, String albumId) {
+    public String getThumbnailUrl() {
+        return thumbnailUrl;
+    }
+
+    public void setThumbnailUrl(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+    }
+
+    protected void setup(String id,  boolean p,String url, String thumbUrl, String title, String comments, String albumId) {
         this.url = url;
         this.id = id;
+        this.thumbnailUrl = thumbUrl ;
         this.primary = p ;
         this.title = title;
         this.comments = comments;
         this.albumId = albumId;
     }
 
-    public Photo(String id,  boolean primary,String url, String title, String comments, String albumId) {
-        setup(id,    primary , url, title, comments, albumId);
+    public Photo(String id,  boolean primary,String url,String thumbUrl,  String title, String comments, String albumId) {
+        setup(id,    primary , url, thumbUrl, title, comments, albumId);
     }
 
-    public Photo(org.springframework.social.flickr.api.Photo flickrPhoto, String id, boolean p, String url, String title, String comments, String albumId) {
+    public Photo(org.springframework.social.flickr.api.Photo flickrPhoto, String id, boolean p, String url,  String thumbUrl, String title, String comments, String albumId) {
         this.flickrPhoto = flickrPhoto ;
-        setup(id,   p, url, title, comments, albumId);
+        setup(id,   p, url, thumbUrl,title, comments, albumId);
     }
 
     public String getUrl() {
