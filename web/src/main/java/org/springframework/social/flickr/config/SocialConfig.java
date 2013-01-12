@@ -1,9 +1,5 @@
 package org.springframework.social.flickr.config;
 
-import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
-import javax.sql.DataSource;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.context.annotation.*;
@@ -24,14 +20,16 @@ import org.springframework.social.flickr.user.User;
 import org.springframework.social.importer.config.BatchImporterConfiguration;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
-import java.util.logging.Logger;
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+import javax.sql.DataSource;
 
 @Configuration
 @Import(BatchImporterConfiguration.class)
 public class SocialConfig {
 
 
-    protected Log logger   = LogFactory.getLog(getClass());
+    protected Log logger = LogFactory.getLog(getClass());
 
     @Inject
     private DataSource dataSource;
@@ -41,57 +39,57 @@ public class SocialConfig {
 
     @Bean
     public ConnectionFactoryLocator connectionFactoryLocator() {
-    	System.out.println("inside the connection facotry locator");
+        System.out.println("inside the connection facotry locator");
         ConnectionFactoryRegistry registry = new ConnectionFactoryRegistry();
         registry.addConnectionFactory(new FlickrConnectionFactory(
-            environment.getProperty("clientId"),
-            environment.getProperty("clientSecret")));
+                environment.getProperty("clientId"),
+                environment.getProperty("clientSecret")));
         return registry;
     }
 
     @Bean
-    @Scope(value="request", proxyMode=ScopedProxyMode.INTERFACES)
-    public ConnectionRepository connectionRepository( HttpServletRequest request){
-    	logger.debug("inside the connectionRepository");
-    	User user = SecurityContext.getCurrentUser( request);
-	    return usersConnectionRepository().createConnectionRepository(user.getId());
+    @Scope(value = "request", proxyMode = ScopedProxyMode.INTERFACES)
+    public ConnectionRepository connectionRepository(HttpServletRequest request) {
+        logger.debug("inside the connectionRepository");
+        User user = SecurityContext.getCurrentUser(request);
+        return usersConnectionRepository().createConnectionRepository(user.getId());
     }
 
     @Bean
     public UsersConnectionRepository usersConnectionRepository() {
-    	logger.debug("inside the usersConnectionRepository");
-    	JdbcUsersConnectionRepository repository =
+        logger.debug("inside the usersConnectionRepository");
+        JdbcUsersConnectionRepository repository =
                 new JdbcUsersConnectionRepository(dataSource,
-				connectionFactoryLocator(), Encryptors.noOpText());
-		repository.setConnectionSignUp(new SimpleConnectionSignUp());
-		return repository;
+                        connectionFactoryLocator(), Encryptors.noOpText());
+        repository.setConnectionSignUp(new SimpleConnectionSignUp());
+        return repository;
     }
 
 
-	@Bean
-	@Scope(value="request", proxyMode=ScopedProxyMode.INTERFACES)
-	public Flickr flickr(HttpServletRequest request) {
-		logger.debug("inside the flickr");
-	    return connectionRepository(request).getPrimaryConnection(Flickr.class).getApi();
-	}
+    @Bean
+    @Scope(value = "request", proxyMode = ScopedProxyMode.INTERFACES)
+    public Flickr flickr(HttpServletRequest request) {
+        logger.debug("inside the flickr");
+        return connectionRepository(request).getPrimaryConnection(Flickr.class).getApi();
+    }
 
-	@Bean
-	public ProviderSignInController providerSignInController() {
-		logger.debug("inside the providerSignInController");
-        ProviderSignInController providerSignInController =  new ProviderSignInController(
+    @Bean
+    public ProviderSignInController providerSignInController() {
+        logger.debug("inside the providerSignInController");
+        ProviderSignInController providerSignInController = new ProviderSignInController(
                 connectionFactoryLocator(),
                 usersConnectionRepository(),
                 new SimpleSignInAdapter());
         providerSignInController.setPostSignInUrl("/welcome");
         return providerSignInController;
-	}
-	
-	 
-	@Bean 
-	public CommonsMultipartResolver multipartResolver(){
-		logger.debug("calling CommonsMultipartResolver");
-		CommonsMultipartResolver c = new CommonsMultipartResolver();
-		c.setMaxUploadSize(100 * 1000);
-		return c;
-	}
+    }
+
+
+    @Bean
+    public CommonsMultipartResolver multipartResolver() {
+        logger.debug("calling CommonsMultipartResolver");
+        CommonsMultipartResolver c = new CommonsMultipartResolver();
+        c.setMaxUploadSize(100 * 1000);
+        return c;
+    }
 }

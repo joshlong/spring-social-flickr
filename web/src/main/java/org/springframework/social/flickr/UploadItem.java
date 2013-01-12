@@ -7,18 +7,18 @@ public class UploadItem {
     private CommonsMultipartFile fileData;
 
     public String getFilename() {
-            return filename;
+        return filename;
     }
 
     public void setFilename(String filename) {
-            this.filename = filename;
+        this.filename = filename;
     }
 
     public CommonsMultipartFile getFileData() {
-            return fileData;
+        return fileData;
     }
 
     public void setFileData(CommonsMultipartFile fileData) {
-            this.fileData = fileData;
+        this.fileData = fileData;
     }
 }

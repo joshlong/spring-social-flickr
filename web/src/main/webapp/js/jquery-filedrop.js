@@ -25,55 +25,56 @@
  *  See README at project homepage
  *
  */
-;(function($) {
+;
+(function ($) {
 
     jQuery.event.props.push("dataTransfer");
 
     var default_opts = {
-            fallback_id: '',
-            url: '',
-            refresh: 1000,
-            paramname: 'userfile',
+            fallback_id:'',
+            url:'',
+            refresh:1000,
+            paramname:'userfile',
             allowedfiletypes:[],
-            maxfiles: 25,           // Ignored if queuefiles is set > 0
-            maxfilesize: 1,         // MB file size limit
-            queuefiles: 0,          // Max files before queueing (for large volume uploads)
-            queuewait: 200,         // Queue wait time if full
-            data: {},
-            headers: {},
-            drop: empty,
-            dragStart: empty,
-            dragEnter: empty,
-            dragOver: empty,
-            dragLeave: empty,
-            docEnter: empty,
-            docOver: empty,
-            docLeave: empty,
-            beforeEach: empty,
-            afterAll: empty,
-            rename: empty,
-            error: function(err, file, i, status) {
+            maxfiles:25, // Ignored if queuefiles is set > 0
+            maxfilesize:1, // MB file size limit
+            queuefiles:0, // Max files before queueing (for large volume uploads)
+            queuewait:200, // Queue wait time if full
+            data:{},
+            headers:{},
+            drop:empty,
+            dragStart:empty,
+            dragEnter:empty,
+            dragOver:empty,
+            dragLeave:empty,
+            docEnter:empty,
+            docOver:empty,
+            docLeave:empty,
+            beforeEach:empty,
+            afterAll:empty,
+            rename:empty,
+            error:function (err, file, i, status) {
                 alert(err);
             },
-            uploadStarted: empty,
-            uploadFinished: empty,
-            progressUpdated: empty,
-            globalProgressUpdated: empty,
-            speedUpdated: empty
+            uploadStarted:empty,
+            uploadFinished:empty,
+            progressUpdated:empty,
+            globalProgressUpdated:empty,
+            speedUpdated:empty
         },
         errors = ["BrowserNotSupported", "TooManyFiles", "FileTooLarge", "FileTypeNotAllowed", "NotFound", "NotReadable", "AbortError", "ReadError"],
         doc_leave_timer, stop_loop = false,
         files_count = 0,
         files;
 
-    $.fn.filedrop = function(options) {
+    $.fn.filedrop = function (options) {
         var opts = $.extend({}, default_opts, options),
             global_progress = [];
 
         this.on('drop', drop).on('dragstart', opts.dragStart).on('dragenter', dragEnter).on('dragover', dragOver).on('dragleave', dragLeave);
         $(document).on('drop', docDrop).on('dragenter', docEnter).on('dragover', docOver).on('dragleave', docLeave);
 
-        $('#' + opts.fallback_id).change(function(e) {
+        $('#' + opts.fallback_id).change(function (e) {
             opts.drop(e);
             files = e.target.files;
             files_count = files.length;
@@ -81,7 +82,7 @@
         });
 
         function drop(e) {
-            if( opts.drop.call(this, e) === false ) return false;
+            if (opts.drop.call(this, e) === false) return false;
             files = e.dataTransfer.files;
             if (files === null || files === undefined || files.length === 0) {
                 opts.error(errors[0]);
@@ -101,10 +102,10 @@
             if (opts.data) {
                 var params = $.param(opts.data).split(/&/);
 
-                $.each(params, function() {
+                $.each(params, function () {
                     var pair = this.split("=", 2),
                         name = decodeURIComponent(pair[0]),
-                        val  = decodeURIComponent(pair[1]);
+                        val = decodeURIComponent(pair[1]);
 
                     builder += dashdash;
                     builder += boundary;
@@ -169,7 +170,7 @@
 
             var total = 0, index;
             for (index in global_progress) {
-                if(global_progress.hasOwnProperty(index)) {
+                if (global_progress.hasOwnProperty(index)) {
                     total = total + global_progress[index];
                 }
             }
@@ -187,8 +188,8 @@
             }
 
             if (opts.allowedfiletypes.push && opts.allowedfiletypes.length) {
-                for(var fileIndex = files.length;fileIndex--;) {
-                    if(!files[fileIndex].type || $.inArray(files[fileIndex].type, opts.allowedfiletypes) < 0) {
+                for (var fileIndex = files.length; fileIndex--;) {
+                    if (!files[fileIndex].type || $.inArray(files[fileIndex].type, opts.allowedfiletypes) < 0) {
                         opts.error(errors[3], files[fileIndex]);
                         return false;
                     }
@@ -215,13 +216,13 @@
 
             // Helper function to enable pause of processing to wait
             // for in process queue to complete
-            var pause = function(timeout) {
+            var pause = function (timeout) {
                 setTimeout(process, timeout);
                 return;
             };
 
             // Process an upload, recursive
-            var process = function() {
+            var process = function () {
 
                 var fileIndex;
 
@@ -253,7 +254,7 @@
                         if (files[fileIndex].size > max_file_size) {
                             opts.error(errors[2], files[fileIndex], fileIndex);
                             // Remove from queue
-                            processingQueue.forEach(function(value, key) {
+                            processingQueue.forEach(function (value, key) {
                                 if (value === fileIndex) {
                                     processingQueue.splice(key, 1);
                                 }
@@ -262,8 +263,8 @@
                             return true;
                         }
 
-                        reader.onerror = function(e) {
-                            switch(e.target.error.code) {
+                        reader.onerror = function (e) {
+                            switch (e.target.error.code) {
                                 case e.target.error.NOT_FOUND_ERR:
                                     opts.error(errors[4]);
                                     return false;
@@ -276,11 +277,14 @@
                                 default:
                                     opts.error(errors[7]);
                                     return false;
-                            };
+                            }
+                            ;
                         };
 
                         reader.onloadend = !opts.beforeSend ? send : function (e) {
-                            opts.beforeSend(files[fileIndex], fileIndex, function () { send(e); });
+                            opts.beforeSend(files[fileIndex], fileIndex, function () {
+                                send(e);
+                            });
                         };
 
                         reader.readAsBinaryString(files[fileIndex]);
@@ -290,7 +294,7 @@
                     }
                 } catch (err) {
                     // Remove from queue
-                    processingQueue.forEach(function(value, key) {
+                    processingQueue.forEach(function (value, key) {
                         if (value === fileIndex) {
                             processingQueue.splice(key, 1);
                         }
@@ -305,7 +309,7 @@
                 }
             };
 
-            var send = function(e) {
+            var send = function (e) {
 
                 var fileIndex = ((typeof(e.srcElement) === "undefined") ? e.target : e.srcElement).index;
 
@@ -355,7 +359,7 @@
                 xhr.setRequestHeader('content-type', 'multipart/form-data; boundary=' + boundary);
 
                 // Add headers
-                $.each(opts.headers, function(k, v) {
+                $.each(opts.headers, function (k, v) {
                     xhr.setRequestHeader(k, v);
                 });
 
@@ -366,7 +370,7 @@
 
                 opts.uploadStarted(index, file, files_count);
 
-                xhr.onload = function() {
+                xhr.onload = function () {
                     var serverResponse = null;
 
                     if (xhr.responseText) {
@@ -384,7 +388,7 @@
                     filesDone++;
 
                     // Remove from processing queue
-                    processingQueue.forEach(function(value, key) {
+                    processingQueue.forEach(function (value, key) {
                         if (value === fileIndex) {
                             processingQueue.splice(key, 1);
                         }
@@ -478,8 +482,8 @@
         }
 
         function docLeave(e) {
-            doc_leave_timer = setTimeout((function(_this) {
-                return function() {
+            doc_leave_timer = setTimeout((function (_this) {
+                return function () {
                     opts.docLeave.call(_this, e);
                 };
             })(this), 200);
@@ -488,20 +492,23 @@
         return this;
     };
 
-    function empty() {}
+    function empty() {
+    }
 
     try {
         if (XMLHttpRequest.prototype.sendAsBinary) {
             return;
         }
-        XMLHttpRequest.prototype.sendAsBinary = function(datastr) {
+        XMLHttpRequest.prototype.sendAsBinary = function (datastr) {
             function byteValue(x) {
                 return x.charCodeAt(0) & 0xff;
             }
+
             var ords = Array.prototype.map.call(datastr, byteValue);
             var ui8a = new Uint8Array(ords);
             this.send(ui8a.buffer);
         };
-    } catch (e) {}
+    } catch (e) {
+    }
 
 })(jQuery);

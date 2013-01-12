@@ -7,7 +7,7 @@
  * (c) 2010-2012 Google, Inc. http://angularjs.org
  * License: MIT
  */
-(function(window, angular, undefined) {
+(function (window, angular, undefined) {
     'use strict';
 
     /**
@@ -217,20 +217,20 @@
      </doc:example>
      */
     angular.module('ngResource', ['ng']).
-        factory('$resource', ['$http', '$parse', function($http, $parse) {
+        factory('$resource', ['$http', '$parse', function ($http, $parse) {
         var DEFAULT_ACTIONS = {
-            'get':    {method:'GET'},
-            'save':   {method:'POST'},
-            'query':  {method:'GET', isArray:true},
-            'remove': {method:'DELETE'},
-            'delete': {method:'DELETE'}
+            'get':{method:'GET'},
+            'save':{method:'POST'},
+            'query':{method:'GET', isArray:true},
+            'remove':{method:'DELETE'},
+            'delete':{method:'DELETE'}
         };
         var noop = angular.noop,
             forEach = angular.forEach,
             extend = angular.extend,
             copy = angular.copy,
             isFunction = angular.isFunction,
-            getter = function(obj, path) {
+            getter = function (obj, path) {
                 return $parse(path)(obj);
             };
 
@@ -277,7 +277,7 @@
             this.template = template = template + '#';
             this.defaults = defaults || {};
             var urlParams = this.urlParams = {};
-            forEach(template.split(/\W/), function(param){
+            forEach(template.split(/\W/), function (param) {
                 if (param && template.match(new RegExp("[^\\\\]:" + param + "\\W"))) {
                     urlParams[param] = true;
                 }
@@ -286,19 +286,19 @@
         }
 
         Route.prototype = {
-            url: function(params) {
+            url:function (params) {
                 var self = this,
                     url = this.template,
                     encodedVal;
 
                 params = params || {};
-                forEach(this.urlParams, function(_, urlParam){
+                forEach(this.urlParams, function (_, urlParam) {
                     encodedVal = encodeUriSegment(params[urlParam] || self.defaults[urlParam] || "");
                     url = url.replace(new RegExp(":" + urlParam + "(\\W)"), encodedVal + "$1");
                 });
                 url = url.replace(/\/?#$/, '');
                 var query = [];
-                forEach(params, function(value, key){
+                forEach(params, function (value, key) {
                     if (!self.urlParams[key]) {
                         query.push(encodeUriQuery(key) + '=' + encodeUriQuery(value));
                     }
@@ -315,26 +315,26 @@
 
             actions = extend({}, DEFAULT_ACTIONS, actions);
 
-            function extractParams(data){
+            function extractParams(data) {
                 var ids = {};
-                forEach(paramDefaults || {}, function(value, key){
+                forEach(paramDefaults || {}, function (value, key) {
                     ids[key] = value.charAt && value.charAt(0) == '@' ? getter(data, value.substr(1)) : value;
                 });
                 return ids;
             }
 
-            function Resource(value){
+            function Resource(value) {
                 copy(value || {}, this);
             }
 
-            forEach(actions, function(action, name) {
+            forEach(actions, function (action, name) {
                 var hasBody = action.method == 'POST' || action.method == 'PUT' || action.method == 'PATCH';
-                Resource[name] = function(a1, a2, a3, a4) {
+                Resource[name] = function (a1, a2, a3, a4) {
                     var params = {};
                     var data;
                     var success = noop;
                     var error = null;
-                    switch(arguments.length) {
+                    switch (arguments.length) {
                         case 4:
                             error = a4;
                             success = a3;
@@ -362,7 +362,8 @@
                             else if (hasBody) data = a1;
                             else params = a1;
                             break;
-                        case 0: break;
+                        case 0:
+                            break;
                         default:
                             throw "Expected between 0-4 arguments [params, data, success, error], got " +
                                 arguments.length + " arguments.";
@@ -370,41 +371,45 @@
 
                     var value = this instanceof Resource ? this : (action.isArray ? [] : new Resource(data));
                     $http({
-                        method: action.method,
-                        url: route.url(extend({}, extractParams(data), action.params || {}, params)),
-                        data: data
-                    }).then(function(response) {
+                        method:action.method,
+                        url:route.url(extend({}, extractParams(data), action.params || {}, params)),
+                        data:data
+                    }).then(function (response) {
                             var data = response.data;
 
                             if (data) {
                                 if (action.isArray) {
                                     value.length = 0;
-                                    forEach(data, function(item) {
+                                    forEach(data, function (item) {
                                         value.push(new Resource(item));
                                     });
                                 } else {
                                     copy(data, value);
                                 }
                             }
-                            (success||noop)(value, response.headers);
+                            (success || noop)(value, response.headers);
                         }, error);
 
                     return value;
                 };
 
 
-                Resource.bind = function(additionalParamDefaults){
+                Resource.bind = function (additionalParamDefaults) {
                     return ResourceFactory(url, extend({}, paramDefaults, additionalParamDefaults), actions);
                 };
 
 
-                Resource.prototype['$' + name] = function(a1, a2, a3) {
+                Resource.prototype['$' + name] = function (a1, a2, a3) {
                     var params = extractParams(this),
                         success = noop,
                         error;
 
-                    switch(arguments.length) {
-                        case 3: params = a1; success = a2; error = a3; break;
+                    switch (arguments.length) {
+                        case 3:
+                            params = a1;
+                            success = a2;
+                            error = a3;
+                            break;
                         case 2:
                         case 1:
                             if (isFunction(a1)) {
@@ -414,7 +419,8 @@
                                 params = a1;
                                 success = a2 || noop;
                             }
-                        case 0: break;
+                        case 0:
+                            break;
                         default:
                             throw "Expected between 1-3 arguments [params, success, error], got " +
                                 arguments.length + " arguments.";

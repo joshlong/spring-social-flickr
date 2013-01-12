@@ -62,8 +62,9 @@ public class BatchDownloadController {
     }
 
 
-   @RequestMapping ("/batch/albums")
-   @ResponseBody public  Collection<PhotoSet> albumsImportedForUser() {
-    return  importer.photoSetsImportedForUser( flickr.peopleOperations().getProfileId());
-      }
+    @RequestMapping("/batch/albums")
+    @ResponseBody
+    public Collection<PhotoSet> albumsImportedForUser() {
+        return importer.photoSetsImportedForUser(flickr.peopleOperations().getProfileId());
+    }
 }

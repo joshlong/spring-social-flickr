@@ -81,7 +81,7 @@ ${messages}
         <div ng-repeat="album in row" class="album">
 
             <div class="albumImage">
-                 <img  src="{{ album.coverImageUrl }}" width="150" />
+                <img src="{{ album.coverImageUrl }}" width="150"/>
             </div>
             <div class="albumInfo">
                 <div class="albumTitle">{{ album.title }}</div>
