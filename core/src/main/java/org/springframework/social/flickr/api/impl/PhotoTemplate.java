@@ -3,6 +3,7 @@ package org.springframework.social.flickr.api.impl;
 
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.converter.BufferedImageHttpMessageConverter;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.social.flickr.api.*;
@@ -15,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import org.w3c.dom.Element;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.net.URI;
@@ -26,9 +28,32 @@ import java.net.URI;
 public class PhotoTemplate extends AbstractFlickrOperations implements PhotoOperations {
     private final RestTemplate restTemplate;
 
+    protected void ensureBufferedImageMessageConverter() {
+        for (HttpMessageConverter<?> mc : this.restTemplate.getMessageConverters()) {
+            if (mc instanceof BufferedImageHttpMessageConverter) {
+                return;
+            }
+        }
+        // otherwise..
+        restTemplate.getMessageConverters().add(new BufferedImageHttpMessageConverter());
+    }
+
     public PhotoTemplate(RestTemplate restTemplate, boolean isAuthorizedForUser) {
         super(isAuthorizedForUser);
         this.restTemplate = restTemplate;
+        ensureBufferedImageMessageConverter();
+    }
+
+    protected String getUrl(String photoId, PhotoSizeEnum size) {
+        PhotoDetail photoDetail = getInfo(photoId);
+        return "http://farm" + photoDetail.getFarm() + ".staticflickr.com/" + photoDetail.getServer() + "/" + photoDetail.getId() + "_" +
+                photoDetail.getSecret() + "_" + size + ".jpg";
+    }
+
+    @Override
+    public BufferedImage getImage(String photoId, PhotoSizeEnum photoSizeEnum) {
+        String url = getUrl(photoId, photoSizeEnum);
+        return this.restTemplate.getForObject(url, BufferedImage.class);
     }
 
     @Override

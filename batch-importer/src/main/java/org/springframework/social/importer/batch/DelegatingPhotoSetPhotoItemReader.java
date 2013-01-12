@@ -1,4 +1,4 @@
-package org.springframework.social.importer;
+package org.springframework.social.importer.batch;
 
 import org.springframework.batch.item.*;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
@@ -6,24 +6,26 @@ import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.flickr.api.MediaEnum;
 import org.springframework.social.flickr.api.PhotoSizeEnum;
 import org.springframework.social.flickr.api.Photoset;
+import org.springframework.social.importer.model.Photo;
+import org.springframework.social.importer.model.PhotoSet;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Simple Item reader that reads all the photos for a given {@link PhotoSet}
+ * Simple Item reader that reads all the photos for a given {@link org.springframework.social.importer.model.PhotoSet}
  * and then passes that information onto an {@link org.springframework.batch.item.ItemWriter}.
  *
  * @author Josh Long
  */
-public class DelegatingFlickrPhotoAlbumPhotoItemReader implements ItemReader<Photo>, ItemStream {
+public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo>, ItemStream {
 
     private JdbcCursorItemReader<PhotoSet> masterAlbumDelegate;
     private Flickr flickrTemplate;
     private PhotoSet photoSet;
     private Queue<org.springframework.social.flickr.api.Photo> photoCollection = new ConcurrentLinkedQueue<org.springframework.social.flickr.api.Photo>();
 
-    public DelegatingFlickrPhotoAlbumPhotoItemReader(Flickr flickrTemplate, JdbcCursorItemReader<PhotoSet> masterAlbumDelegate) {
+    public DelegatingPhotoSetPhotoItemReader(Flickr flickrTemplate, JdbcCursorItemReader<PhotoSet> masterAlbumDelegate) {
         this.flickrTemplate = flickrTemplate;
         this.masterAlbumDelegate = masterAlbumDelegate;
     }
@@ -41,6 +43,7 @@ public class DelegatingFlickrPhotoAlbumPhotoItemReader implements ItemReader<Pho
             if (null == photoSet)
                 return null;
 
+
             // if there is a PhotoSet, then load its PhotoDetails
             Photoset photosSet = flickrTemplate.photosetOperations().getPhotos(photoSet.getId(), null, null, null, null, MediaEnum.PHOTOS);
             for (org.springframework.social.flickr.api.Photo p : photosSet.getPhoto()) {
@@ -53,8 +56,9 @@ public class DelegatingFlickrPhotoAlbumPhotoItemReader implements ItemReader<Pho
         if (null == photo)
             return null;
 
+
         // downloads the 'large' image
-        return new Photo(photo.getId(), photo.getUrl(PhotoSizeEnum.b), photo.getTitle(), null, photoSet.getId());
+        return new Photo(photo.getId(), photo.getIsPrimary(), photo.getUrl(PhotoSizeEnum.b), photo.getUrl(PhotoSizeEnum.s), photo.getTitle(), null, photoSet.getId());
     }
 
     @Override

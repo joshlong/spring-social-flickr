@@ -6,10 +6,7 @@ import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.social.connect.ConnectionFactoryLocator;
@@ -24,11 +21,13 @@ import org.springframework.social.flickr.user.SecurityContext;
 import org.springframework.social.flickr.user.SimpleConnectionSignUp;
 import org.springframework.social.flickr.user.SimpleSignInAdapter;
 import org.springframework.social.flickr.user.User;
+import org.springframework.social.importer.config.BatchImporterConfiguration;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
 import java.util.logging.Logger;
 
 @Configuration
+@Import(BatchImporterConfiguration.class)
 public class SocialConfig {
 
 
@@ -51,7 +50,6 @@ public class SocialConfig {
     }
 
     @Bean
-    @Inject
     @Scope(value="request", proxyMode=ScopedProxyMode.INTERFACES)
     public ConnectionRepository connectionRepository( HttpServletRequest request){
     	logger.debug("inside the connectionRepository");
@@ -71,7 +69,6 @@ public class SocialConfig {
 
 
 	@Bean
-    @Inject
 	@Scope(value="request", proxyMode=ScopedProxyMode.INTERFACES)
 	public Flickr flickr(HttpServletRequest request) {
 		logger.debug("inside the flickr");

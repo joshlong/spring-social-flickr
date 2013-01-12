@@ -1,57 +1,36 @@
-package org.springframework.social.importer;
-
+package org.springframework.social.importer.batch;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.social.flickr.api.Flickr;
+import org.springframework.social.flickr.api.PhotoSizeEnum;
+import org.springframework.social.importer.model.Photo;
 import org.springframework.util.Assert;
-import org.springframework.web.client.RestTemplate;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.List;
 
 /**
- * Downloads files from Flickr
+ * This item processor simply actually 'fetches' the photo
  *
  * @author Josh Long
  */
-public class PhotoDownloadingItemWriter implements ItemWriter<Photo> {
+public class PhotoDownloadingItemProcessor implements ItemProcessor<Photo, Photo> {
+
     private Log logger = LogFactory.getLog(getClass());
 
     private File outputDirectory; // should come from job parameters
-
     private Flickr flickrTemplate;
 
-    private RestTemplate restTemplate;
-
-    public PhotoDownloadingItemWriter(Flickr flickrTemplate, RestTemplate rt, File outputDirectory) {
+    public PhotoDownloadingItemProcessor(Flickr flickrTemplate, File outputDirectory) {
         this.outputDirectory = outputDirectory;
         this.flickrTemplate = flickrTemplate;
-        this.restTemplate = rt; // this is used to handle downloading the images in an OAuth-complaint way
         Assert.notNull(flickrTemplate, "the flickrTemplate must be non-null");
-        Assert.notNull(restTemplate, "the rest template must be non-null");
         Assert.notNull(outputDirectory, "you must specify a non-null output directory");
         Assert.isTrue(outputDirectory.exists(), "the output directory must exist");
-    }
-
-    @Override
-    public void write(List<? extends Photo> items) throws Exception {
-        for (Photo p : items) {
-            String url = p.getUrl();
-            String ext = extension(url);
-            File output = new File(forPhoto(p), p.getId() + ext);
-            if (shouldFileBeDownloaded(output)) {
-                logger.info("downloading " + url + " to " + output.getAbsolutePath() + ".");
-                BufferedImage bi = this.restTemplate.getForObject(url, BufferedImage.class);
-                ImageIO.write(bi, ext.substring(1), output);
-            } else {
-                logger.info("not downloading " + url + " to " + output.getAbsolutePath() + " because the file already exists.");
-            }
-        }
     }
 
     /**
@@ -82,4 +61,19 @@ public class PhotoDownloadingItemWriter implements ItemWriter<Photo> {
         return outputForAlbum;
     }
 
+
+    @Override
+    public Photo process(Photo p) throws Exception {
+        String url = p.getUrl();
+        String ext = extension(url);
+        File output = new File(forPhoto(p), p.getId() + ext);
+        if (shouldFileBeDownloaded(output)) {
+            logger.info("downloading " + url + " to " + output.getAbsolutePath() + ".");
+            BufferedImage bi = flickrTemplate.photoOperations().getImage(p.getId(), PhotoSizeEnum.b);
+            ImageIO.write(bi, ext.substring(1), output);
+        } else {
+            logger.info("not downloading " + url + " to " + output.getAbsolutePath() + " because the file already exists.");
+        }
+        return p;
+    }
 }
