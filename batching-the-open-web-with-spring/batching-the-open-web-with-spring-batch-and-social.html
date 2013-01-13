@@ -1,0 +1,319 @@
+<html xmlns="http://www.w3.org/1999/html">
+<head><title>The Title</title>
+    <link rel='stylesheet' href='default.css' type='text/css' media='all'/>
+    <script src="jquery-1.8.3.min.js"></script>
+    <script src="github-files.js"></script>
+    <style type="text/css">
+        .sidebar h1 {
+            font-size: smaller;
+            color: green;
+            display: run-in;
+            text-transform: uppercase;
+            margin-right: 30px;
+        }
+
+        .sidebar {
+            background-color: yellow;
+            padding: 10px;
+
+        }
+
+        .source {
+        } </style>
+    <script> function code(file, div, lineStart) {
+        var angleBrackets = function (i) {
+            while (i.match('<') != null) i = i.replace('<', '&lt;');
+            while (i.match('>') != null) i = i.replace('>', '&gt;');
+            return i;
+        };
+        $.getGithubFileByFilePath('joshlong', 'spring-social-flickr', file, function (contents) {
+            var html = angleBrackets(contents + '');
+            $(div).html('<pre><code>' + html + '</code></pre>');
+        }, lineStart ? lineStart : 16);
+    }
+    $(function () {
+        $(".source").each(function (indx) {
+            var ceNode = $(this);
+            var fn = ceNode.html().trim();
+            console.log(fn);
+            var start = ceNode.attr('start');
+            if (start || typeof start != 'undefined') {
+                start = parseInt(start + '');
+                code(fn, ceNode, start);
+            } else {
+                code(fn, ceNode);
+            }
+        })
+    }) </script>
+</head>
+<body><h1> Batching the Open Web with Spring Social and Spring Batch </h1>
+
+<p> It's the new year and with it come new years resolutions. This year, I got a quick start on one of them: I wanted to
+    download my photos from <A href="http://flickr.com">Flickr</a>. I like Flickr, but it's just not as integrated into
+    my tools and life as I'd like it to be, so I wanted to migrate my photos to another service that was both free and
+    more integrated. I needed a way to get my photos off of Flickr. There are many tools out there for doing this, but
+    the tools that are out there seem to die before the job of downloading my tens of thousands of photos is done (yes,
+    I have a professional Flickr account!) or they're outdated and don't run because they use an older API or they use
+    some sort of delicate hack. So, I decided I'd solve the problem myself, and solve it I did! </p>
+
+<h2> Making the Connection with Spring Social Flickr</h2>
+
+<P> The first step in getting my photos off of Flickr is to connect to Flickr. As many of you will know, <a
+        href="http://springsource.org/spring-social">Spring Social</a> makes it very easy to build applications that
+    connect to web service provider APIs like <a
+            href="http://github.com/SpringSource/spring-social-facebook">Facebook</a>, <a
+            href="http://github.com/SpringSource/spring-social-twitter">Twitter</a>, and <a
+            href="http://github.com/SpringSource/spring-social-linkedin">LinkedIn</a>. Spring Social enables this by
+    providing a core authentication and authorization hook that in turn provides a generic framework for connecting and
+    working with OAuth 1.0, 1.0.a, and OAuth 2.0-based APIs. This is often the most tedious part of connecting to an
+    API, after all, so it's nice to have this chunk removed. This, coupled with Spring's already very robust REST
+    support in the form of its <CODE>RestTemplate</CODE>, makes it very simple to provide bindings for <EM>any</EM>
+    service provider! Many, many people have. For a more complete - though by no means exhaustive - list, check out <a
+            href="https://github.com/SpringSource/spring-social/wiki/Api-Providers">the Spring Social Wiki page for a
+        list of the other bindings that have, if you'll pardon the expression, <EM>sprung</em> up</a>. </p>
+
+<P> The Flickr binding is of interest to me in solving this problem. The original <a
+        href="https://github.com/ranjan-rk/spring-social-flickr">Flickr binding</a>, it would be fair to say, looks very
+    promising indeed, but is a <EM>little</EM> unfinished. <a href="http://github.com/joshlong/spring-social-flickr">I've
+        had to make some small tweaks</a>. The thrust of the additions are some small changes to the binding itself, as
+    well as the addition of <a href="http://springsource.org/spring-batch">a Spring Batch-based downloader</a>. </P>
+<img width="200" src="oauth_logo.png" style="float : left; margin-right : 20px; "/>
+
+<P><A href="http://en.wikipedia.org/wiki/OAuth">OAuth</a> is a complicated, multi-step dance. Basically, it's a secured
+    conversation. </p>
+<OL>
+    <LI> The consumer of a service starts a conversation with a service provider and asks the service provider to let
+        the client work with the service provider's data (typically on behalf of a flesh-and-blood human being whose
+        data will be manipulated).
+    </lI>
+    <LI> The service provider authenticates the user (this is what happens when, for example, you're so often redirected
+        to Facebook.com to login to forms on various web pages).
+    </lI>
+    <LI> Once authenticated, the service provider redirects back to the client application with a token in the
+        response.
+    </lI>
+    <LI> The client must provide this token on all requests to the service provider</lI>
+</ol>
+<p> To complicate matters worse, this process looks slightly different depending on which version of the specification
+    you're referring to, 1.0, 1.0a, and 2.0. If this sounds like a lot of work, that's because <em>it is!</em>. But, you
+    need not meet the burden alone. Spring Social's got you covered. </P>
+
+<P> Setting up Spring Social is easy in a web application. You can work with Spring Social's API bindings outside of a
+    web environment, but you're going to need certain values to interact with the web services. Usually, you'll need at
+    least a <em>client ID</EM> (called a <EM>key</EM> in Flickr parlance) and a <EM>client secret</EM> (called a <EM>secret</EM>
+    in Flickr parlance), which you can get from the service's developer portal. The <A
+            href="http://www.flickr.com/services/developer/api/">Flickr developer portal</A> makes obtaining these
+    values straight forward. Once <A href="http://www.flickr.com/services/apps/create/apply/">you've applied for a
+        key</a>, simply note the client ID and the client secret. If you've already created an application, then you can
+    see your API keys and secrets at <CODE>http://www.flickr.com/services/apps/by/<b>YOUR_USERNAME</b></code>, where
+    <code>YOUR_USERNAME</code> is to be replaced with your Flickr account name. </p>
+
+<P> The next thing you'll need are an access token and an access token secret. These values are created dynamically for
+    each authenticated user. So that we're clear, the <em>client ID</em> and <em>client secret </EM> identify the <EM>application</EM>
+    that's connecting to Flickr. They do not identify the <EM>user</EM> on whose behalf this application is connecting.
+    To obtain those values, the user needs to satisfy the sign in flow described above, in a web application that Flickr
+    can redirect back to. You'll need to tell Flickr which URL it should redirect back to, with the requested access
+    token, when you configure your application. </p>
+
+<h3>Setting Up Spring MVC </h3>
+
+<P> To demonstrate what this all means in practice, let's first look at the anatomy of a typical Spring Social web
+    application, the <CODE>web</code> module in my Spring Social Flickr fork. The first thing to look at any in web
+    application is the <code>web.xml</code> file and associated configuration. In our application, it looks like this:
+</p>
+
+<div class="source" start="1">web/src/main/webapp/WEB-INF/web.xml</div>
+<p> We have setup several Servlet <CODE>Filter</CODE>s that make dealing with web requests easier. Here's a look at some
+    of them: </p>
+<OL>
+    <LI><B>org.springframework.web.filter.CharacterEncodingFilter</b> - forces requests into and out of the application
+        into a certain encoding, in this case, UTF 8
+    </LI>
+    <LI><B>org.springframework.web.filter.HiddenHttpMethodFilter</b> - browsers can only send HTTP <CODE>POST</code> and
+        <CODE>GET</CODE> requests, which makes them blind to other commonly used HTTP requests, including HTTP requests
+        of type <CODE>PUT</CODE> and <CODE>DELETE</CODE>, both commonly used in building RESTful applications. This
+        filter circumvents that limitation by <EM>routing</EM> incoming HTTP requests of type <CODE>POST</CODE> or
+        <CODE>GET</CODE> to the appropriate Spring MVC controller, including those only exposed via <CODE>DELETE</CODE>
+        and <CODE>PUT</CODE>, based on the presence of a <CODE>_method</code> header in the request.
+    </LI>
+</oL>
+<p> The rest of the configuration is pretty typical: we configure the <CODE>DispatcherServlet</code>, which in turn
+    bootstraps the Spring <CODE>ApplicationContext</code>. The <CODE>DispatcherServlet</code> needs to know what type of
+    application context to use, so we have several <CODE>&lt;context-param&gt;</code> elements that tailor the behavior
+    of the <Code>DispatcherServlet</code>. The <code>contextInitializerClasses</code> <code>context-param</code>
+    specifies a class that Spring will call right before it begins constructing the <CODE>ApplicationContext</CODE>. It
+    is here that we specify the <CODE>org.springframework.social.flickr.config.AnnotationConfigWebApplicationContextInitializer</CODE>,
+    a class that we provide to configure our web application. Here's the code:</p>
+
+<div class="source">
+    web/src/main/java/org/springframework/social/flickr/config/AnnotationConfigWebApplicationContextInitializer.java
+</div>
+<p> This class is called right before the <CODE>ApplicationContext</CODE> instance is configured and run by Spring,
+    giving us a chance to tell it things about the application. In our case, most of the work is simply in registering
+    which packages Spring should automatically scan to auto-register components. We tell it to read all the components
+    in, or below, the package that the class <code>org.springframework.social.flickr.HomeController</code> lives in.
+    This includes all classes annotated with <CODE>@Component</CODE>, <CODE>@Controller</CODE> and
+    <CODE>@Configuration</CODE>. Then, to support reading required properties from a file located outside of the web
+    application (in this case <CODE>~/flickr.properties</CODE> - we build up and contribute a
+    <CODE>PropertySource</CODE> to the <CODE>ApplicationContext</CODE> inside the <CODE>registerPropertiesForFlickrConnection</CODE>
+    method. </p>
+
+<p> There are two classes in <code>org.springframework.social.flickr.config</code> that are Java application
+    configuration and are processed when the application starts up because they have <CODE>@Configuration</CODE> on
+    them. The first is the basic Spring MVC configuration, shown below. </p>
+
+<div class="source">web/src/main/java/org/springframework/social/flickr/config/WebMvcConfig.java</div>
+<p> Spring will see that this class contains <CODE>@EnableWebMvc</CODE> and it will bootstrap Spring MVC, providing
+    useful defaults for lots of things based on whether the correct dependencies are on the classpath, including RESTful
+    responses through XML- and JSON-to-object marshalling (you need a JAXB implementation or Jackson), JSR 303-based
+    bean validation (you need Hibernate validator), file uploads ( <CODE>commons-fileupload</code>, or Servlet 3
+    support), and more. So, we don't need to do a lot to get the basic machinery working. All we're doing here is
+    instructing Spring MVC to do a few things specific to our application: </p>
+<OL>
+    <LI><b>addViewControllers(ViewControllerRegistry registry) </b> tells Spring MVC to forward requests for the
+        registered paths (for example, <CODE>/signin</CODE>) directly to the appropriate view (<CODE>/WEB-INF/jsp/signin.jsp</code>),
+        and don't bother trying to invoke a Spring MVC controller before hand.
+    </LI>
+    <LI><b> addResourceHandlers(ResourceHandlerRegistry registry) </b> tells Spring MVC to forward requests for a given
+        path or directory directly to the resources on a file system, and don't bother trying to resolve these paths
+        through the normal controller resolution process.
+    </LI>
+    <LI><b>configureDefaultServletHandling(DefaultServletHandlerConfigurer configurer)</b> is very useful if you want
+        your Spring application to sit at the root of servlet context (e.g., "/") and handle all requests. If you
+        configure a servlet this way, than that servlet becomes responsible for all requests into the container, even
+        those the servlet that's so configured is not prepared to handle, like <code>.jpg</code> images or
+        <code>.js</code> files and other static resources. To get around this, Spring MVC can delegate to the <EM>default
+            servlet</EM> on many different web containers, letting it handle those requests. Because the location of the
+        <EM>default servlet</EM> is non-standard, you have to ask Spring MVC to do this for you. It works for a variety
+        of containers, but it may not always work.
+    </LI>
+    <LI><B>@Bean public ViewResolver viewResolver()</B> finally, we contribute using regular Java configuration style a
+        bean of type <CoDE>ViewResolver</CoDE>, which is a Spring MVC SPI class that resolves views given a generic
+        String. So, given the String <EM>"signin"</EM>, it might resolve it to a <A href="">Thymeleaf</a> template, or a
+        <code>.jsp</code> page, or an Apache Tiles view, or any of numerous other types of <CODE>View</CODE> types, all
+        based on the heuristics unique to each <CODE>ViewResolver</CODE> implementation. In our application, we want
+        <code>/signin</code> to resolve to the <code>.jsp</code> page <code>/WEB-INF/jsp/signin.jsp</code>, so we
+        specify a <CODE>ViewResolver</CODE> of type <CODE>InternalResourceViewResolver</CODE> and specify the
+        <em>prefix</em> and <em>suffix</em> properties that when taken together along with the view string, describe a
+        fully qualified <code>.jsp</code> page's path.
+    </LI>      <LI>
+    <b>@Bean public CommonsMultipartResolver multipartResolver()</b> contributes an implementation of <CODE>CommonsMultipartResolver</CODE>
+    under the well-known name <CODE>multipartResolver</CODE>. Spring  will delegate to this when handling file uploads.
+    </LI>
+</OL>
+<h3>Setting up Spring Social </h3>
+
+<P> Next, let's look at how to introduce Spring Social. This happens in another class annotated with <CODE>@Configuration</CODE>
+    in the same package as <CODE>WebMvcConfig</CODE>, called <CODE>SocialConfig</CODE>.
+</p>
+
+<P>
+    Spring Social has a lot of duties. It has to handle connecting to service providers on behalf of users with OAuth,
+    but in order to do that, it must keep some state. After all, it has to transmit the access token and access token
+    secret that it acquired on all subsequent requests, which means it needs to <em>remember</EM> those values.
+</P>
+
+<P> Additionally, it needs to be easily integrated with your application's notion of a <EM>user</EM>. Even if you do let
+    users log in via Facebook or Twitter, your still has its own per-user state to be managed.
+    Perhaps your application handles authentication via Spring
+    Security which in turn talks to LDAP or Active Directory. Perhaps you have a lightweight <CODE>users</CODE> table.
+    Whatever the case, Spring Social tries to make it straight forward to link service provider identities with your
+    application's notion of an identity. </P>
+
+<P>
+    Finally, Spring Social bindings provide a type-safe Java API that maps to the domain model and API calls of the
+    target webservice.
+    This API binding is of course specific to each web service. A Twitter binding has the notion of <EM>tweets</EM> and
+    <em>timelines</em>.
+    The Facebook binding has the notion of <EM>friends</EM> and <EM>status</EM>. And, of course, the Flickr binding has
+    the
+    notion of <EM>photos</EM> and <em>photo sets</EM>. This type safe binding must also be configured.
+    With those stated responsibilities in mind, let's dissect the <CODE>SocialConfig</CODE> class.
+</p>
+
+
+<div class="source">web/src/main/java/org/springframework/social/flickr/config/SocialConfig.java</div>
+
+<DIV class="sidebar">
+    <h1> A Quick Refresher on Java configuration </h1>
+
+    <P> For those that haven't used the Java configuration style, a quick refresher: Spring will load
+        this class when it starts up the <CODE>ApplicationContext</CODE>,
+        and it'll run through all the methods annotated with <CODE>@Bean</CODE>, analyzing the arguments each declares
+        (which it tries to satisfy as dependencies),
+        and, once it has provided a valid reference to the dependency, it invokes the method. It takes - by default -
+        the
+        method name is a bean's <CODE>id</code>, and it takes
+        the return value's class as the <code>class</code>. It takes the return value and stores it in the <CODE>ApplicationContext</code>,
+        as a bean
+        that can then be injected into other beans.
+    </P>
+</DIV>
+<a name="socialConfig"/>
+<OL>
+    <LI><b> ConnectionFactoryLocator connectionFactoryLocator</b> the <CODE>ConnectionFactoryLocator</CODE>
+        contains the at-runtime map of which APIs are available, and can return the correct connection factory by
+        provider id (<code>flickr</code>) or type (<CODE>Flickr.class</CODE>).
+
+        To support Flickr, for example, we register the <CODE>FlickrConnectionFactory</CODE>, which
+        in turn extends <CODE>OAuth1ConnectionFactory</CODE>. <CODE>FlickrConnectionFactory</CODE>
+        knows how to establish connections to Flickr for a given client ID and client secret using OAuth 1.
+        We could, for example, also register a <CODE>TwitterConnectionFactory</CODE> to support working with both
+        Twitter and Flickr in the same
+        application.
+
+    </LI>
+    <LI><b>UsersConnectionRepository usersConnectionRepository </b> The <CODE>UsersConnectionRepository</CODE> object is
+        provides
+        state for the established connections. It persists the access tokens and access token secrets about
+        users that have connected to a service provider. The implementation we use here - <CODE>JdbcUsersConnectionRepository</CODE>
+        -
+        persists its data in a SQL database, which is why we declare a reference to a <CODE>javax.sql.DataSource</CODE>
+        as a
+        dependency, in addition to the <CODE>ConnectionFactoryLocator</CODE> defined above. We'll look at the database
+        being used later on when we look at our
+        batch processing logic. The schema used looks like this:
+        <div start="1" class="source">batch-importer/src/main/resources/social_pg.sql</div>
+    </LI>
+    <LI><b>
+        ConnectionRepository connectionRepository
+    </b> Next, we configure the <CODE>ConnectionRepository</CODE> object which is an object that provides a data access
+        interface
+        for user data, specifically for one user. So, it might manage the the Twitter and Facebook connections for one
+        user while the user's
+        logged into the web application, but then the object ceases to exist.
+
+
+        It is simply a short-lived, user-specific view of data coming from the <CODE>UsersConnectionRepository</CODE>
+        object, which in turn
+        manages data for <EM>all</EM> users. To support this short lifetime, the bean is created as a <EM>scoped</EM>
+        bean. It will live for only as long as the current HTTP request is being processed, and then destroyed.
+        The bean is annotated with <CODE>@Scope</code>, and given a scope of
+        <CODE>WebApplicationContext.SCOPE_REQUEST</CODE>. There are of course many such scopes. <CODE>Singleton</CODE> is the default,
+        of course, and does not need to be specified.
+    </LI>
+    <LI><b>
+        Flickr flickr
+    </b>             Next we create the <CODE>Flickr</CODE> object, which is the API binding that lets us work with the Flickr API in a type safe way. We do
+        this  by looking up the API binding through the <CODE>ConnectionRepository</CODE>, which in turn delegates to the  <CODE>UsersConnectionRepository</CODE>,
+        which in turn   delegates to the <CODE>ConnectionFactoryLocator</CODE>.     This object is also <code>request</code> scoped.
+
+    </LI>
+    <LI><b> ProviderSignInController providerSignInController </b> With the machinery  in place, all that's left is to expose endpoints in the web application that can be used to
+        connect handle the OAuth1 callback requests from the service provider and to drive the conversation with the service provider to sign in.
+        Spring Social provides a ready-to-use implementation of all of this called <CODE>ProviderSignInController</CODE> that
+        you need simply register. It's a Spring MVC controller and will automatically handle requests to the well known
+        URLs required for the OAuth connection process. The one part that this object can't provide by itself is
+        the code that    signs in  your local application's notion of a user once the service provider user has been signed in.
+        The two need to be synchronized. For this, you must provide an implementation of <CODE>SignInAdapter</CODE> as the third argument
+        to the constructor.  Our implementation, <code>org.springframework.social.flickr.user.SimpleSignInAdapter</code> simply generates a cookie when
+        a user is successfully logged in and stores some user state in the HTTP session.
+
+        <div class="source">web/src/main/java/org/springframework/social/flickr/user/SimpleSignInAdapter.java</div>
+
+
+    </LI>
+
+</OL>
+</body>
+</html>
