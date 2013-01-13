@@ -48,14 +48,14 @@ public class AnnotationConfigWebApplicationContextInitializer implements Applica
     /**
      * contributes properties from <code>~/flickr.properties</code> to the {@link org.springframework.core.env.Environment environment}
      */
-    private static <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) {
+    private <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) {
         try {
             File propertiesFile = new File(SystemUtils.getUserHome(), "flickr.properties");
             Assert.isTrue(propertiesFile.exists(),
                     "could not find " + propertiesFile.getAbsolutePath() +
-                    ", which must exist and contain at a minimum a Flickr client ID and secret ('" +
-                    "clientId, and clientSecret) and database connection information (dataSource.user, " +
-                    "dataSource.password, dataSource.url, and dataSource.driverClassName)."
+                            ", which must exist and contain at a minimum a Flickr client ID and secret ('" +
+                            "clientId, and clientSecret) and database connection information (dataSource.user, " +
+                            "dataSource.password, dataSource.url, and dataSource.driverClassName)."
             );
             Resource propertiesResource = new FileSystemResource(propertiesFile);
             Properties properties = new Properties();
