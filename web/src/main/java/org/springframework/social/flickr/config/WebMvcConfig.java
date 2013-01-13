@@ -17,6 +17,7 @@ package org.springframework.social.flickr.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
@@ -48,5 +49,10 @@ public class WebMvcConfig extends WebMvcConfigurerAdapter {
         return viewResolver;
     }
 
-
+    @Bean
+    public CommonsMultipartResolver multipartResolver() {
+        CommonsMultipartResolver c = new CommonsMultipartResolver();
+        c.setMaxUploadSize(100 * 1000);
+        return c;
+    }
 }

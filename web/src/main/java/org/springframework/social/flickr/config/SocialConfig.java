@@ -80,10 +80,4 @@ public class SocialConfig {
         return providerSignInController;
     }
 
-    @Bean
-    public CommonsMultipartResolver multipartResolver() {
-        CommonsMultipartResolver c = new CommonsMultipartResolver();
-        c.setMaxUploadSize(100 * 1000);
-        return c;
-    }
 }
