@@ -44,11 +44,12 @@ public class SocialConfig {
 
     @Bean
     public ConnectionFactoryLocator connectionFactoryLocator(Environment environment) {
-        String clientId = environment.getProperty("clientId");
-        String clientSecret = environment.getProperty("clientSecret");
-        FlickrConnectionFactory flickrConnectionFactory = new FlickrConnectionFactory(clientId, clientSecret);
         ConnectionFactoryRegistry registry = new ConnectionFactoryRegistry();
-        registry.addConnectionFactory(flickrConnectionFactory);
+
+        String flickrClientId = environment.getProperty("clientId");
+        String flickrClientSecret = environment.getProperty("clientSecret");
+        registry.addConnectionFactory(new FlickrConnectionFactory(flickrClientId, flickrClientSecret));
+
         return registry;
     }
 
