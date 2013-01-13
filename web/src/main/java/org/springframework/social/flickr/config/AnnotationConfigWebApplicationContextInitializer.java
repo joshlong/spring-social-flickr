@@ -29,12 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
-
-/**
- * Implementation of {@link ApplicationContextInitializer} that contributes properties from a file (<code>~/flickr.properties</code>).
- *
- * @author Josh Long
- */
 public class AnnotationConfigWebApplicationContextInitializer implements ApplicationContextInitializer<AnnotationConfigWebApplicationContext> {
 
     @Override
@@ -45,9 +39,6 @@ public class AnnotationConfigWebApplicationContextInitializer implements Applica
         applicationContext.start();
     }
 
-    /**
-     * contributes properties from <code>~/flickr.properties</code> to the {@link org.springframework.core.env.Environment environment}
-     */
     private <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) {
         try {
             File propertiesFile = new File(SystemUtils.getUserHome(), "flickr.properties");
