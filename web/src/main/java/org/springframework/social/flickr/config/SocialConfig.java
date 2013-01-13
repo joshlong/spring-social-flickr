@@ -15,8 +15,6 @@
  */
 package org.springframework.social.flickr.config;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.encrypt.Encryptors;
@@ -33,6 +31,7 @@ import org.springframework.social.flickr.user.SimpleConnectionSignUp;
 import org.springframework.social.flickr.user.SimpleSignInAdapter;
 import org.springframework.social.flickr.user.User;
 import org.springframework.social.importer.config.BatchImporterConfiguration;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
 import javax.servlet.http.HttpServletRequest;
@@ -43,57 +42,45 @@ import javax.sql.DataSource;
 public class SocialConfig {
 
 
-    protected Log logger = LogFactory.getLog(getClass());
-
     @Bean
     public ConnectionFactoryLocator connectionFactoryLocator(Environment environment) {
-        System.out.println("inside the connection facotry locator");
+        String clientId = environment.getProperty("clientId");
+        String clientSecret = environment.getProperty("clientSecret");
+        FlickrConnectionFactory flickrConnectionFactory = new FlickrConnectionFactory(clientId, clientSecret);
         ConnectionFactoryRegistry registry = new ConnectionFactoryRegistry();
-        registry.addConnectionFactory(new FlickrConnectionFactory(
-                environment.getProperty("clientId"),
-                environment.getProperty("clientSecret")));
+        registry.addConnectionFactory(flickrConnectionFactory);
         return registry;
     }
 
     @Bean
-    @Scope(value = "request", proxyMode = ScopedProxyMode.INTERFACES)
+    @Scope(value = WebApplicationContext.SCOPE_REQUEST, proxyMode = ScopedProxyMode.INTERFACES)
     public ConnectionRepository connectionRepository(UsersConnectionRepository usersConnectionRepository, HttpServletRequest request) {
-        logger.debug("inside the connectionRepository");
         User user = SecurityContext.getCurrentUser(request);
         return usersConnectionRepository.createConnectionRepository(user.getId());
     }
 
     @Bean
     public UsersConnectionRepository usersConnectionRepository(ConnectionFactoryLocator connectionFactoryLocator, DataSource dataSource) {
-        logger.debug("inside the usersConnectionRepository");
-        JdbcUsersConnectionRepository repository =
-                new JdbcUsersConnectionRepository(dataSource,
-                        connectionFactoryLocator, Encryptors.noOpText());
+        JdbcUsersConnectionRepository repository = new JdbcUsersConnectionRepository(dataSource, connectionFactoryLocator, Encryptors.noOpText());
         repository.setConnectionSignUp(new SimpleConnectionSignUp());
         return repository;
     }
 
     @Bean
-    @Scope(value = "request", proxyMode = ScopedProxyMode.INTERFACES)
+    @Scope(value = WebApplicationContext.SCOPE_REQUEST, proxyMode = ScopedProxyMode.INTERFACES)
     public Flickr flickr(ConnectionRepository connectionRepository) {
-        logger.debug("inside the flickr");
         return connectionRepository.getPrimaryConnection(Flickr.class).getApi();
     }
 
     @Bean
     public ProviderSignInController providerSignInController(ConnectionFactoryLocator connectionFactoryLocator, UsersConnectionRepository usersConnectionRepository) {
-        logger.debug("inside the providerSignInController");
-        ProviderSignInController providerSignInController = new ProviderSignInController(
-                connectionFactoryLocator,
-                usersConnectionRepository,
-                new SimpleSignInAdapter());
+        ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, new SimpleSignInAdapter());
         providerSignInController.setPostSignInUrl("/welcome");
         return providerSignInController;
     }
 
     @Bean
     public CommonsMultipartResolver multipartResolver() {
-        logger.debug("calling CommonsMultipartResolver");
         CommonsMultipartResolver c = new CommonsMultipartResolver();
         c.setMaxUploadSize(100 * 1000);
         return c;
