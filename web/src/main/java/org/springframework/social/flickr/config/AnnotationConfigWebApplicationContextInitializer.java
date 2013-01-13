@@ -29,8 +29,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
 
+
 /**
- * Configures the web application
+ * Implementation of {@link ApplicationContextInitializer} that contributes properties from a file (<code>~/flickr.properties</code>).
  *
  * @author Josh Long
  */
@@ -45,17 +46,16 @@ public class AnnotationConfigWebApplicationContextInitializer implements Applica
     }
 
     /**
-     * I do this because I don't want to constantly specify the properties on the command line and I don't want
-     * to check in the properties on github in a public repository since I'm working with my own photos.
+     * contributes properties from <code>~/flickr.properties</code> to the {@link org.springframework.core.env.Environment environment}
      */
     private static <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) {
         try {
             File propertiesFile = new File(SystemUtils.getUserHome(), "flickr.properties");
             Assert.isTrue(propertiesFile.exists(),
                     "could not find " + propertiesFile.getAbsolutePath() +
-                            ", which must exist and contain at a minimum a Flickr client ID and secret ('" +
-                            "clientId, and clientSecret) and database connection information (dataSource.user, " +
-                            "dataSource.password, dataSource.url, and dataSource.driverClassName)."
+                    ", which must exist and contain at a minimum a Flickr client ID and secret ('" +
+                    "clientId, and clientSecret) and database connection information (dataSource.user, " +
+                    "dataSource.password, dataSource.url, and dataSource.driverClassName)."
             );
             Resource propertiesResource = new FileSystemResource(propertiesFile);
             Properties properties = new Properties();
