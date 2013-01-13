@@ -53,17 +53,17 @@ public class SocialConfig {
     }
 
     @Bean
-    @Scope(value = WebApplicationContext.SCOPE_REQUEST, proxyMode = ScopedProxyMode.INTERFACES)
-    public ConnectionRepository connectionRepository(UsersConnectionRepository usersConnectionRepository, HttpServletRequest request) {
-        User user = SecurityContext.getCurrentUser(request);
-        return usersConnectionRepository.createConnectionRepository(user.getId());
-    }
-
-    @Bean
     public UsersConnectionRepository usersConnectionRepository(ConnectionFactoryLocator connectionFactoryLocator, DataSource dataSource) {
         JdbcUsersConnectionRepository repository = new JdbcUsersConnectionRepository(dataSource, connectionFactoryLocator, Encryptors.noOpText());
         repository.setConnectionSignUp(new SimpleConnectionSignUp());
         return repository;
+    }
+
+    @Bean
+    @Scope(value = WebApplicationContext.SCOPE_REQUEST, proxyMode = ScopedProxyMode.INTERFACES)
+    public ConnectionRepository connectionRepository(UsersConnectionRepository usersConnectionRepository, HttpServletRequest request) {
+        User user = SecurityContext.getCurrentUser(request);
+        return usersConnectionRepository.createConnectionRepository(user.getId());
     }
 
     @Bean
