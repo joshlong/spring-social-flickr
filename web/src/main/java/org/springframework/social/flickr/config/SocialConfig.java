@@ -35,7 +35,6 @@ import org.springframework.social.flickr.user.User;
 import org.springframework.social.importer.config.BatchImporterConfiguration;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
-import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 
@@ -46,14 +45,8 @@ public class SocialConfig {
 
     protected Log logger = LogFactory.getLog(getClass());
 
-    @Inject
-    private DataSource dataSource;
-
-    @Inject
-    private Environment environment;
-
     @Bean
-    public ConnectionFactoryLocator connectionFactoryLocator() {
+    public ConnectionFactoryLocator connectionFactoryLocator(Environment environment) {
         System.out.println("inside the connection facotry locator");
         ConnectionFactoryRegistry registry = new ConnectionFactoryRegistry();
         registry.addConnectionFactory(new FlickrConnectionFactory(
@@ -64,41 +57,39 @@ public class SocialConfig {
 
     @Bean
     @Scope(value = "request", proxyMode = ScopedProxyMode.INTERFACES)
-    public ConnectionRepository connectionRepository(HttpServletRequest request) {
+    public ConnectionRepository connectionRepository(UsersConnectionRepository usersConnectionRepository, HttpServletRequest request) {
         logger.debug("inside the connectionRepository");
         User user = SecurityContext.getCurrentUser(request);
-        return usersConnectionRepository().createConnectionRepository(user.getId());
+        return usersConnectionRepository.createConnectionRepository(user.getId());
     }
 
     @Bean
-    public UsersConnectionRepository usersConnectionRepository() {
+    public UsersConnectionRepository usersConnectionRepository(ConnectionFactoryLocator connectionFactoryLocator, DataSource dataSource) {
         logger.debug("inside the usersConnectionRepository");
         JdbcUsersConnectionRepository repository =
                 new JdbcUsersConnectionRepository(dataSource,
-                        connectionFactoryLocator(), Encryptors.noOpText());
+                        connectionFactoryLocator, Encryptors.noOpText());
         repository.setConnectionSignUp(new SimpleConnectionSignUp());
         return repository;
     }
 
-
     @Bean
     @Scope(value = "request", proxyMode = ScopedProxyMode.INTERFACES)
-    public Flickr flickr(HttpServletRequest request) {
+    public Flickr flickr(ConnectionRepository connectionRepository) {
         logger.debug("inside the flickr");
-        return connectionRepository(request).getPrimaryConnection(Flickr.class).getApi();
+        return connectionRepository.getPrimaryConnection(Flickr.class).getApi();
     }
 
     @Bean
-    public ProviderSignInController providerSignInController() {
+    public ProviderSignInController providerSignInController(ConnectionFactoryLocator connectionFactoryLocator, UsersConnectionRepository usersConnectionRepository) {
         logger.debug("inside the providerSignInController");
         ProviderSignInController providerSignInController = new ProviderSignInController(
-                connectionFactoryLocator(),
-                usersConnectionRepository(),
+                connectionFactoryLocator,
+                usersConnectionRepository,
                 new SimpleSignInAdapter());
         providerSignInController.setPostSignInUrl("/welcome");
         return providerSignInController;
     }
-
 
     @Bean
     public CommonsMultipartResolver multipartResolver() {
