@@ -15,37 +15,24 @@
  */
 package org.springframework.social.flickr.api.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJacksonHttpMessageConverter;
-import org.springframework.social.flickr.api.ActivityOperations;
-import org.springframework.social.flickr.api.BlogsOperations;
-import org.springframework.social.flickr.api.CommonsOperations;
-import org.springframework.social.flickr.api.FavoritesOperations;
-import org.springframework.social.flickr.api.Flickr;
-import org.springframework.social.flickr.api.GalleriesOperations;
-import org.springframework.social.flickr.api.GroupsOperations;
-import org.springframework.social.flickr.api.PeopleOperations;
-import org.springframework.social.flickr.api.PhotoCommentOperations;
-import org.springframework.social.flickr.api.PhotoLicenseOperations;
-import org.springframework.social.flickr.api.PhotoNoteOperations;
-import org.springframework.social.flickr.api.PhotoOperations;
-import org.springframework.social.flickr.api.PhotosetOperations;
+import org.springframework.social.flickr.api.*;
 import org.springframework.social.oauth1.AbstractOAuth1ApiBinding;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author HemantS
- *
  */
 public class FlickrTemplate extends AbstractOAuth1ApiBinding implements Flickr {
-	private PeopleOperations peopleOperations;
+    private PeopleOperations peopleOperations;
     private PhotoOperations photoOperations;
     private PhotoCommentOperations photoCommentOperations;
     private PhotoLicenseOperations photoLicenseOperations;
-    private PhotoNoteOperations photoNoteOperations; 
+    private PhotoNoteOperations photoNoteOperations;
     private PhotosetOperations photosetOperations;
     private GalleriesOperations galleriesOperations;
     private FavoritesOperations favoritesOperations;
@@ -55,94 +42,95 @@ public class FlickrTemplate extends AbstractOAuth1ApiBinding implements Flickr {
     private GroupsOperations groupsOperations;
 
 
-
-	public FlickrTemplate(String consumerKey, String consumerSecret, String accessToken, String accessTokenSecret) {
-    	super(consumerKey, consumerSecret, accessToken, accessTokenSecret);
-    	initSubApis();
-    }
-    
-	public FlickrTemplate(){
-    	super();
-    	initSubApis();
+    public FlickrTemplate(String consumerKey, String consumerSecret, String accessToken, String accessTokenSecret) {
+        super(consumerKey, consumerSecret, accessToken, accessTokenSecret);
+        initSubApis();
     }
 
-	private void initSubApis() {
-		this.peopleOperations = new PeopleTemplate(getRestTemplate(),isAuthorized());
-		this.photoOperations = new PhotoTemplate(getRestTemplate(),isAuthorized()); 
-		this.photoCommentOperations = new PhotoCommentTemplate(getRestTemplate(),isAuthorized() );
-		this.photoLicenseOperations = new PhotoLicenseTemplate(getRestTemplate(), isAuthorized());
-		this.photoNoteOperations = new PhotoNoteTemplate(getRestTemplate(), isAuthorized());
-		this.photosetOperations = new PhotosetTemplate(getRestTemplate(), isAuthorized());
-		this.galleriesOperations = new GalleriesTemplate(getRestTemplate(), isAuthorized());
-		this.favoritesOperations = new FavoritesTemplate(getRestTemplate(), isAuthorized());
-		this.activityOperations = new ActivityTemplate(getRestTemplate(), isAuthorized());
-		this.blogsOperations = new BlogsTemplate(getRestTemplate(), isAuthorized());
-		this.commonsOperations = new CommonsTemplate(getRestTemplate(), isAuthorized());
-		this.groupsOperations = new GroupsTemplate(getRestTemplate(), isAuthorized());
-	}
-	
-	
+    public FlickrTemplate() {
+        super();
+        initSubApis();
+    }
+
+    private void initSubApis() {
+        this.peopleOperations = new PeopleTemplate(getRestTemplate(), isAuthorized());
+        this.photoOperations = new PhotoTemplate(getRestTemplate(), isAuthorized());
+        this.photoCommentOperations = new PhotoCommentTemplate(getRestTemplate(), isAuthorized());
+        this.photoLicenseOperations = new PhotoLicenseTemplate(getRestTemplate(), isAuthorized());
+        this.photoNoteOperations = new PhotoNoteTemplate(getRestTemplate(), isAuthorized());
+        this.photosetOperations = new PhotosetTemplate(getRestTemplate(), isAuthorized());
+        this.galleriesOperations = new GalleriesTemplate(getRestTemplate(), isAuthorized());
+        this.favoritesOperations = new FavoritesTemplate(getRestTemplate(), isAuthorized());
+        this.activityOperations = new ActivityTemplate(getRestTemplate(), isAuthorized());
+        this.blogsOperations = new BlogsTemplate(getRestTemplate(), isAuthorized());
+        this.commonsOperations = new CommonsTemplate(getRestTemplate(), isAuthorized());
+        this.groupsOperations = new GroupsTemplate(getRestTemplate(), isAuthorized());
+    }
+
+
     @Override
     protected MappingJacksonHttpMessageConverter getJsonMessageConverter() {
-		MappingJacksonHttpMessageConverter converter = super.getJsonMessageConverter();			
-		FlickrObjectMapper objectMapper = new FlickrObjectMapper();
-		objectMapper.registerModule(new FlickrModule());
-		objectMapper.disable(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES);
-		objectMapper.enable(DeserializationConfig.Feature.UNWRAP_ROOT_VALUE);
-		List<MediaType> supportedMediaTypes = new ArrayList<MediaType>();
-		supportedMediaTypes.add(MediaType.TEXT_PLAIN);
-		supportedMediaTypes.add(MediaType.TEXT_XML);
-		supportedMediaTypes.add(MediaType.APPLICATION_JSON);
-		converter.setSupportedMediaTypes(supportedMediaTypes);
-		converter.setObjectMapper(objectMapper);
-		return converter;
+        MappingJacksonHttpMessageConverter converter = super.getJsonMessageConverter();
+        FlickrObjectMapper objectMapper = new FlickrObjectMapper();
+        objectMapper.registerModule(new FlickrModule());
+        objectMapper.disable(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES);
+        objectMapper.enable(DeserializationConfig.Feature.UNWRAP_ROOT_VALUE);
+        List<MediaType> supportedMediaTypes = new ArrayList<MediaType>();
+        supportedMediaTypes.add(MediaType.TEXT_PLAIN);
+        supportedMediaTypes.add(MediaType.TEXT_XML);
+        supportedMediaTypes.add(MediaType.APPLICATION_JSON);
+        converter.setSupportedMediaTypes(supportedMediaTypes);
+        converter.setObjectMapper(objectMapper);
+        return converter;
     }
 
-	public PeopleOperations peopleOperations() {
-		return peopleOperations;
-	}
-
-
-	public PhotoOperations photoOperations() {
-		return photoOperations;
-	}
-
-	public PhotoCommentOperations photoCommentOperations() {
-		return photoCommentOperations;
-	}
-
-	public PhotoLicenseOperations photoLicenseOperations() {
-		return photoLicenseOperations;
-	}
-
-	public PhotoNoteOperations photoNoteOperations() {
-		return photoNoteOperations;
-	}
-
-	public PhotosetOperations photosetOperations() {
-		return photosetOperations;
-	}
-
-	public GalleriesOperations galleriesOperations() {
-		return galleriesOperations;
-	}
-
-	public FavoritesOperations favoritesOperations() {
-		return favoritesOperations;
-	}
-
-	public ActivityOperations activityOperations() {
-		return activityOperations;
-	}
-    
-    public BlogsOperations blogsOperations(){
-    	return blogsOperations;
+    public PeopleOperations peopleOperations() {
+        return peopleOperations;
     }
-    public CommonsOperations commonsOperations(){
-    	return commonsOperations;
+
+
+    public PhotoOperations photoOperations() {
+        return photoOperations;
     }
-    public GroupsOperations groupsOperations(){
-    	return groupsOperations;
+
+    public PhotoCommentOperations photoCommentOperations() {
+        return photoCommentOperations;
+    }
+
+    public PhotoLicenseOperations photoLicenseOperations() {
+        return photoLicenseOperations;
+    }
+
+    public PhotoNoteOperations photoNoteOperations() {
+        return photoNoteOperations;
+    }
+
+    public PhotosetOperations photosetOperations() {
+        return photosetOperations;
+    }
+
+    public GalleriesOperations galleriesOperations() {
+        return galleriesOperations;
+    }
+
+    public FavoritesOperations favoritesOperations() {
+        return favoritesOperations;
+    }
+
+    public ActivityOperations activityOperations() {
+        return activityOperations;
+    }
+
+    public BlogsOperations blogsOperations() {
+        return blogsOperations;
+    }
+
+    public CommonsOperations commonsOperations() {
+        return commonsOperations;
+    }
+
+    public GroupsOperations groupsOperations() {
+        return groupsOperations;
     }
 
 }

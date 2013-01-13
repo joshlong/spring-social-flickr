@@ -17,41 +17,29 @@ package org.springframework.social.flickr.api.impl;
 
 import org.codehaus.jackson.Version;
 import org.codehaus.jackson.map.module.SimpleModule;
-import org.springframework.social.flickr.api.Comments;
-import org.springframework.social.flickr.api.CommentsMixin;
-import org.springframework.social.flickr.api.Group;
-import org.springframework.social.flickr.api.GroupMixin;
-import org.springframework.social.flickr.api.Person;
-import org.springframework.social.flickr.api.PersonMixin;
-import org.springframework.social.flickr.api.Photo;
-import org.springframework.social.flickr.api.PhotoMixin;
-import org.springframework.social.flickr.api.Photoset;
-import org.springframework.social.flickr.api.PhotosetMixin;
-import org.springframework.social.flickr.api.User;
-import org.springframework.social.flickr.api.UserMixin;
+import org.springframework.social.flickr.api.*;
 
 /**
  * @author HemantS
- *
  */
 public class FlickrModule extends SimpleModule {
 
     public FlickrModule(String name, Version version) {
-    	super(name, version);
+        super(name, version);
     }
 
     public FlickrModule() {
-    	super("FlickrModule", new Version(1, 0, 0, null));
+        super("FlickrModule", new Version(1, 0, 0, null));
     }
 
     @Override
     public void setupModule(SetupContext context) {
-		context.setMixInAnnotations(User.class, UserMixin.class);
-		context.setMixInAnnotations(Person.class, PersonMixin.class);
-		context.setMixInAnnotations(Group.class, GroupMixin.class);
-		context.setMixInAnnotations(Photo.class, PhotoMixin.class);
-		context.setMixInAnnotations(Comments.class, CommentsMixin.class);
-		context.setMixInAnnotations(Photoset.class, PhotosetMixin.class);
-		
+        context.setMixInAnnotations(User.class, UserMixin.class);
+        context.setMixInAnnotations(Person.class, PersonMixin.class);
+        context.setMixInAnnotations(Group.class, GroupMixin.class);
+        context.setMixInAnnotations(Photo.class, PhotoMixin.class);
+        context.setMixInAnnotations(Comments.class, CommentsMixin.class);
+        context.setMixInAnnotations(Photoset.class, PhotosetMixin.class);
+
     }
 }
