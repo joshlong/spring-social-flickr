@@ -8,34 +8,33 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * @author HemantS
- *
  */
 public class InterestingnessTemplate extends AbstractFlickrOperations implements
-		InterestingnessOperations {
-	private final RestTemplate restTemplate;
+        InterestingnessOperations {
+    private final RestTemplate restTemplate;
 
-	public InterestingnessTemplate(RestTemplate restTemplate,
-			boolean isAuthorizedForUser) {
-		super(isAuthorizedForUser);
-		this.restTemplate = restTemplate;
-	}
+    public InterestingnessTemplate(RestTemplate restTemplate,
+                                   boolean isAuthorizedForUser) {
+        super(isAuthorizedForUser);
+        this.restTemplate = restTemplate;
+    }
 
-	@Override
-	public Photos getList(String apiKey, String date, String extras,
-			String perPage, String page) {
-		MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
-		if (apiKey != null)
-			parameters.set("api_key", apiKey);
-		if (date != null)
-			parameters.set("date", date);
-		if (extras != null)
-			parameters.set("extras", extras);
-		if (perPage != null)
-			parameters.set("per_page", perPage);
-		if (page != null)
-			parameters.set("page", page);
-		return restTemplate.getForObject(
-				buildUri("flickr.interestingness.getList", parameters),
-				Photos.class);
-	}
+    @Override
+    public Photos getList(String apiKey, String date, String extras,
+                          String perPage, String page) {
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
+        if (apiKey != null)
+            parameters.set("api_key", apiKey);
+        if (date != null)
+            parameters.set("date", date);
+        if (extras != null)
+            parameters.set("extras", extras);
+        if (perPage != null)
+            parameters.set("per_page", perPage);
+        if (page != null)
+            parameters.set("page", page);
+        return restTemplate.getForObject(
+                buildUri("flickr.interestingness.getList", parameters),
+                Photos.class);
+    }
 }

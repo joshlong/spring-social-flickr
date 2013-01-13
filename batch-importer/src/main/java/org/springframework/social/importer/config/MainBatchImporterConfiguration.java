@@ -10,10 +10,12 @@ import org.springframework.social.flickr.api.impl.FlickrTemplate;
 /**
  * Simple configuration that provides a defintion of the FlickrTemplate object outside of a web session.
  * Relies on the user having the required OAuth values to setup a FlickrTemplate handy
+ *
  * @author Josh Long
  */
-@Configuration @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
-@Import( BatchImporterConfiguration.class)
+@Configuration
+@Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
+@Import(BatchImporterConfiguration.class)
 public class MainBatchImporterConfiguration {
     @Bean
     @Scope("step")

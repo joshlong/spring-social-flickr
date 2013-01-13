@@ -9,30 +9,29 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * @author HemantS
- *
  */
 public class PhotoLicenseTemplate extends AbstractFlickrOperations implements PhotoLicenseOperations {
-	
-private final RestTemplate restTemplate;
-	
-	public PhotoLicenseTemplate(RestTemplate restTemplate,boolean isAuthorizedForUser) {
-		super(isAuthorizedForUser);
-		this.restTemplate = restTemplate;
-	}
 
-	@Override
-	public Licenses getInfo() {
-		return restTemplate.getForObject(buildUri("flickr.photos.licenses.getInfo"), Licenses.class);
-	}
+    private final RestTemplate restTemplate;
 
-	@Override
-	public boolean setLicense(String photoId, LicenseEnum license) {
-		requireAuthorization();
-		MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
-		parameters.set("photo_id", photoId);
-		parameters.set("license_id", license.getLicense());
-		restTemplate.postForObject(buildUri("flickr.photos.licenses.setLicense"),parameters, Object.class);
-		return true;
-	}
+    public PhotoLicenseTemplate(RestTemplate restTemplate, boolean isAuthorizedForUser) {
+        super(isAuthorizedForUser);
+        this.restTemplate = restTemplate;
+    }
+
+    @Override
+    public Licenses getInfo() {
+        return restTemplate.getForObject(buildUri("flickr.photos.licenses.getInfo"), Licenses.class);
+    }
+
+    @Override
+    public boolean setLicense(String photoId, LicenseEnum license) {
+        requireAuthorization();
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
+        parameters.set("photo_id", photoId);
+        parameters.set("license_id", license.getLicense());
+        restTemplate.postForObject(buildUri("flickr.photos.licenses.setLicense"), parameters, Object.class);
+        return true;
+    }
 
 }

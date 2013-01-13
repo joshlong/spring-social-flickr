@@ -25,29 +25,29 @@ import org.springframework.web.client.HttpClientErrorException;
 public class FlickrAdapter implements ApiAdapter<Flickr> {
 
     public boolean test(Flickr flickr) {
-	try {
-	    flickr.peopleOperations().getPersonProfile();
-	    return true;
-	} catch (HttpClientErrorException e) {
-	    e.printStackTrace();
-	    return false;
-	}
+        try {
+            flickr.peopleOperations().getPersonProfile();
+            return true;
+        } catch (HttpClientErrorException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
     public UserProfile fetchUserProfile(Flickr api) {
-    	System.out.println("TODO : Implement fetchUserProfile");
-    	return null;
+        System.out.println("TODO : Implement fetchUserProfile");
+        return null;
     }
 
     @Override
     public void setConnectionValues(Flickr flickr, ConnectionValues values) {
-    	Person person = flickr.peopleOperations().getPersonProfile();
-		values.setProviderUserId(person.getId());
-		values.setDisplayName(person.getUserName());
+        Person person = flickr.peopleOperations().getPersonProfile();
+        values.setProviderUserId(person.getId());
+        values.setDisplayName(person.getUserName());
     }
 
     public void updateStatus(Flickr flickr, String message) {
-    	throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 }

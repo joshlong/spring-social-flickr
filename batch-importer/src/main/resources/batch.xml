@@ -13,9 +13,9 @@
         <!--
           // step one: load all the photo albums into the database
         -->
-       <step id="step1" >
+        <step id="step1">
 
-            <tasklet  transaction-manager="transactionManager">
+            <tasklet transaction-manager="transactionManager">
                 <chunk reader="photoAlbumItemReader" writer="photoAlbumItemWriter" commit-interval="10"/>
             </tasklet>
             <next on="*" to="step2"/>
@@ -25,14 +25,13 @@
           // step two: load all the photo details into the database
         -->
 
-     <step id="step2">
+        <step id="step2">
             <tasklet transaction-manager="transactionManager">
                 <chunk reader="delegatingFlickrPhotoAlbumPhotoItemReader" writer="photoDetailItemWriter"
                        commit-interval="10"/>
             </tasklet>
             <next on="*" to="step3"/>
         </step>
-
 
 
         <!--

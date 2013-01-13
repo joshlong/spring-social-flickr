@@ -38,8 +38,8 @@ public class PhotoSetItemReader implements ItemReader<PhotoSet>, InitializingBea
         if (null == og)
             return null;
 
-        Photoset ps =  this.photosetOperations.getInfo(og.getId()) ;
-        return new PhotoSet(  ps , userId);
+        Photoset ps = this.photosetOperations.getInfo(og.getId());
+        return new PhotoSet(ps, userId);
     }
 
     public void setFlickrTemplate(FlickrTemplate flickrTemplate) {

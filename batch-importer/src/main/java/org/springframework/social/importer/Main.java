@@ -7,7 +7,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.social.importer.config.BatchImporterConfiguration;
 import org.springframework.social.importer.config.MainBatchImporterConfiguration;
 import org.springframework.util.Assert;
 
@@ -26,7 +25,7 @@ public class Main {
     public static void main(String args[]) throws Throwable {
         AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext();
         registerPropertiesForFlickrConnection(applicationContext);
-        applicationContext.register( MainBatchImporterConfiguration.class);
+        applicationContext.register(MainBatchImporterConfiguration.class);
         applicationContext.refresh();
         applicationContext.start();
 
@@ -40,16 +39,17 @@ public class Main {
                             "output photos, but we could not create it!.");
         }
 
-        String  userId =environment.getProperty("userId"),
+        String userId = environment.getProperty("userId"),
                 clientId = environment.getProperty("clientId"),
                 clientSecret = environment.getProperty("clientSecret"),
                 accessToken = environment.getProperty("accessToken"),
                 accessTokenSecret = environment.getProperty("accessTokenSecret");
 
-        flickrImporter.importPhotosToDirectory( userId,accessToken, accessTokenSecret, clientId, clientSecret, output);
+        flickrImporter.importPhotosToDirectory(userId, accessToken, accessTokenSecret, clientId, clientSecret, output);
 
 
     }
+
     private static <T extends AbstractApplicationContext> void registerPropertiesForFlickrConnection(T applicationContext) {
         try {
             File propertiesFile = new File(SystemUtils.getUserHome(), "flickr.properties");

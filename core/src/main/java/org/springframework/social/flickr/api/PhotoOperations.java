@@ -16,7 +16,7 @@ public interface PhotoOperations {
     /**
      * returns a BufferedImage for the photo specified
      */
-    BufferedImage getImage(String photoId, PhotoSizeEnum pse )    ;
+    BufferedImage getImage(String photoId, PhotoSizeEnum pse);
 
     /**
      * Adds the tags.

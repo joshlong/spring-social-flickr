@@ -36,7 +36,7 @@ public class PhotoSet {
         this.photosDownloaded = photosDownloaded;
     }
 
-    private void init(int cv, int cp,  String title, String description, String id, String userId) {
+    private void init(int cv, int cp, String title, String description, String id, String userId) {
         this.userId = userId;
         this.countOfPhotos = cp;
         this.id = id;
@@ -46,13 +46,13 @@ public class PhotoSet {
     }
 
     public PhotoSet(int cv, int cp, String primaryImageUrl, String title, String description, String id, String userId) {
-        init(cv, cp,   title, description, id, userId);
+        init(cv, cp, title, description, id, userId);
         this.primaryImageUrl = primaryImageUrl;
     }
 
     public PhotoSet(Photoset photoset, String userId) {
         init(photoset.getCountVideos(), photoset.getCountPhotos(),
-                  photoset.getTitle(), photoset.getDescription(), photoset.getId(), userId);
+                photoset.getTitle(), photoset.getDescription(), photoset.getId(), userId);
     }
 
     public String getDescription() {
