@@ -368,10 +368,10 @@
                 [d.position().top, c]
             ] || null
         }).sort(function (a, b) {
-            return a[0] - b[0]
-        }).each(function () {
-            b.offsets.push(this[0]), b.targets.push(this[1])
-        })
+                return a[0] - b[0]
+            }).each(function () {
+                b.offsets.push(this[0]), b.targets.push(this[1])
+            })
     }, process:function () {
         var a = this.$scrollElement.scrollTop() + this.options.offset, b = this.$scrollElement[0].scrollHeight || this.$body[0].scrollHeight, c = b - this.$scrollElement.height(), d = this.offsets, e = this.targets, f = this.activeTarget, g;
         if (a >= c)return f != (g = e.last()[0]) && this.activate(g);

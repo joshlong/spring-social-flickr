@@ -279,12 +279,12 @@
         this.element.bind("mousedown." + this.widgetName,function (e) {
             return c._mouseDown(e)
         }).bind("click." + this.widgetName, function (e) {
-            if (true === a.data(e.target, c.widgetName + ".preventClickEvent")) {
-                a.removeData(e.target, c.widgetName + ".preventClickEvent");
-                e.stopImmediatePropagation();
-                return false
-            }
-        });
+                if (true === a.data(e.target, c.widgetName + ".preventClickEvent")) {
+                    a.removeData(e.target, c.widgetName + ".preventClickEvent");
+                    e.stopImmediatePropagation();
+                    return false
+                }
+            });
         this.started = false
     }, _mouseDestroy:function () {
         this.element.unbind("." +
@@ -2726,12 +2726,12 @@ jQuery.effects || function (a, d) {
             d.element.find(c.header).addClass("ui-accordion-header ui-helper-reset ui-state-default ui-corner-all").bind("mouseenter.accordion",function () {
                 c.disabled || a(this).addClass("ui-state-hover")
             }).bind("mouseleave.accordion",function () {
-                c.disabled || a(this).removeClass("ui-state-hover")
-            }).bind("focus.accordion",function () {
-                c.disabled || a(this).addClass("ui-state-focus")
-            }).bind("blur.accordion", function () {
-                c.disabled || a(this).removeClass("ui-state-focus")
-            });
+                    c.disabled || a(this).removeClass("ui-state-hover")
+                }).bind("focus.accordion",function () {
+                    c.disabled || a(this).addClass("ui-state-focus")
+                }).bind("blur.accordion", function () {
+                    c.disabled || a(this).removeClass("ui-state-focus")
+                });
         d.headers.next().addClass("ui-accordion-content ui-helper-reset ui-widget-content ui-corner-bottom");
         if (c.navigation) {
             var e = d.element.find("a").filter(c.navigationFilter).eq(0);
@@ -3022,26 +3022,26 @@ jQuery.effects || function (a, d) {
                 clearTimeout(c.closing)
             }, 13)
         }).menu({focus:function (g, i) {
-            i = i.item.data("item.autocomplete");
-            false !== c._trigger("focus", g, {item:i}) && /^key/.test(g.originalEvent.type) &&
-            c.element.val(i.value)
-        }, selected:function (g, i) {
-            var b = i.item.data("item.autocomplete"), f = c.previous;
-            if (c.element[0] !== e.activeElement) {
-                c.element.focus();
-                c.previous = f;
-                setTimeout(function () {
+                i = i.item.data("item.autocomplete");
+                false !== c._trigger("focus", g, {item:i}) && /^key/.test(g.originalEvent.type) &&
+                c.element.val(i.value)
+            }, selected:function (g, i) {
+                var b = i.item.data("item.autocomplete"), f = c.previous;
+                if (c.element[0] !== e.activeElement) {
+                    c.element.focus();
                     c.previous = f;
-                    c.selectedItem = b
-                }, 1)
-            }
-            false !== c._trigger("select", g, {item:b}) && c.element.val(b.value);
-            c.term = c.element.val();
-            c.close(g);
-            c.selectedItem = b
-        }, blur:function () {
-            c.menu.element.is(":visible") && c.element.val() !== c.term && c.element.val(c.term)
-        }}).zIndex(this.element.zIndex() + 1).css({top:0, left:0}).hide().data("menu");
+                    setTimeout(function () {
+                        c.previous = f;
+                        c.selectedItem = b
+                    }, 1)
+                }
+                false !== c._trigger("select", g, {item:b}) && c.element.val(b.value);
+                c.term = c.element.val();
+                c.close(g);
+                c.selectedItem = b
+            }, blur:function () {
+                c.menu.element.is(":visible") && c.element.val() !== c.term && c.element.val(c.term)
+            }}).zIndex(this.element.zIndex() + 1).css({top:0, left:0}).hide().data("menu");
         a.fn.bgiframe && this.menu.element.bgiframe()
     }, destroy:function () {
         this.element.removeClass("ui-autocomplete-input").removeAttr("autocomplete").removeAttr("role").removeAttr("aria-autocomplete").removeAttr("aria-haspopup");
@@ -3254,8 +3254,8 @@ jQuery.effects || function (a, d) {
         this.element.bind("focus.button",function () {
             b.buttonElement.addClass("ui-state-focus")
         }).bind("blur.button", function () {
-            b.buttonElement.removeClass("ui-state-focus")
-        });
+                b.buttonElement.removeClass("ui-state-focus")
+            });
         if (j) {
             this.element.bind("change.button", function () {
                 h || b.refresh()
@@ -3292,13 +3292,13 @@ jQuery.effects || function (a, d) {
                     d = null
                 })
             }).bind("mouseup.button",function () {
-                if (f.disabled)return false;
-                a(this).removeClass("ui-state-active")
-            }).bind("keydown.button",function (o) {
-                if (f.disabled)return false;
-                if (o.keyCode == a.ui.keyCode.SPACE ||
-                    o.keyCode == a.ui.keyCode.ENTER)a(this).addClass("ui-state-active")
-            }).bind("keyup.button", function () {
+                    if (f.disabled)return false;
+                    a(this).removeClass("ui-state-active")
+                }).bind("keydown.button",function (o) {
+                    if (f.disabled)return false;
+                    if (o.keyCode == a.ui.keyCode.SPACE ||
+                        o.keyCode == a.ui.keyCode.ENTER)a(this).addClass("ui-state-active")
+                }).bind("keyup.button", function () {
                     a(this).removeClass("ui-state-active")
                 });
             this.buttonElement.is("a") && this.buttonElement.keyup(function (o) {
@@ -3522,8 +3522,8 @@ jQuery.effects || function (a, d) {
                 j.addClass(this.markerClassName).append(f.dpDiv).bind("setData.datepicker",function (l, o, n) {
                     f.settings[o] = n
                 }).bind("getData.datepicker", function (l, o) {
-                    return this._get(f, o)
-                });
+                        return this._get(f, o)
+                    });
                 a.data(b, "datepicker", f);
                 this._setDate(f, this._getDefaultDate(f), true);
                 this._updateDatepicker(f);
@@ -3964,8 +3964,8 @@ jQuery.effects || function (a, d) {
                         [E, D]
                     ]
                 }).sort(function (D, E) {
-                    return-(D[1].length - E[1].length)
-                });
+                        return-(D[1].length - E[1].length)
+                    });
                 var J = -1;
                 a.each(z, function (D, E) {
                     D = E[1];
@@ -4431,13 +4431,13 @@ jQuery.effects || function (a, d) {
             },function () {
                 o.removeClass("ui-state-hover")
             }).focus(function () {
-                o.addClass("ui-state-focus")
-            }).blur(function () {
-                o.removeClass("ui-state-focus")
-            }).click(function (n) {
-                g.close(n);
-                return false
-            }).appendTo(l);
+                    o.addClass("ui-state-focus")
+                }).blur(function () {
+                    o.removeClass("ui-state-focus")
+                }).click(function (n) {
+                    g.close(n);
+                    return false
+                }).appendTo(l);
         (g.uiDialogTitlebarCloseText = a("<span></span>")).addClass("ui-icon ui-icon-closethick").text(i.closeText).appendTo(o);
         a("<span></span>").addClass("ui-dialog-title").attr("id",
             f).html(b).prependTo(l);
@@ -4907,17 +4907,17 @@ jQuery.effects || function (a, d) {
         this.handles.add(this.range).filter("a").click(function (b) {
             b.preventDefault()
         }).hover(function () {
-            c.disabled || a(this).addClass("ui-state-hover")
-        },function () {
-            a(this).removeClass("ui-state-hover")
-        }).focus(function () {
-            if (c.disabled)a(this).blur(); else {
-                a(".ui-slider .ui-state-focus").removeClass("ui-state-focus");
-                a(this).addClass("ui-state-focus")
-            }
-        }).blur(function () {
-            a(this).removeClass("ui-state-focus")
-        });
+                c.disabled || a(this).addClass("ui-state-hover")
+            },function () {
+                a(this).removeClass("ui-state-hover")
+            }).focus(function () {
+                if (c.disabled)a(this).blur(); else {
+                    a(".ui-slider .ui-state-focus").removeClass("ui-state-focus");
+                    a(this).addClass("ui-state-focus")
+                }
+            }).blur(function () {
+                a(this).removeClass("ui-state-focus")
+            });
         this.handles.each(function (b) {
             a(this).data("index.ui-slider-handle",
                 b)
