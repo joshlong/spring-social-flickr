@@ -47,6 +47,24 @@ import java.util.Map;
 public class BatchImporterConfiguration {
 
     @Bean
+    public DataSource dataSource(Environment environment) {
+
+        String pw = environment.getProperty("dataSource.password"),
+                user = environment.getProperty("dataSource.user"),
+                url = environment.getProperty("dataSource.url");
+
+        Class<Driver> classOfDs = environment.getPropertyAsClass("dataSource.driverClassName", Driver.class);
+
+        SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
+        dataSource.setPassword(pw);
+        dataSource.setUrl(url);
+        dataSource.setUsername(user);
+        dataSource.setDriverClass(classOfDs);
+
+        return dataSource;
+    }
+
+    @Bean
     public FlickrImporter importer(DataSource dataSource,
                                    @Qualifier("flickrImportJob") Job importFlickrPhotosJob,
                                    JobLauncher jobLauncher,
@@ -67,7 +85,7 @@ public class BatchImporterConfiguration {
     @Bean
     public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor() throws Exception {
         JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor = new JobRegistryBeanPostProcessor();
-        jobRegistryBeanPostProcessor.setJobRegistry(this.mapJobRegistry());
+        jobRegistryBeanPostProcessor.setJobRegistry(new MapJobRegistry());
         return jobRegistryBeanPostProcessor;
     }
 
@@ -76,28 +94,6 @@ public class BatchImporterConfiguration {
         return new DataSourceTransactionManager(ds);
     }
 
-    @Bean
-    public MapJobRegistry mapJobRegistry() throws Exception {
-        return new MapJobRegistry();
-    }
-
-    @Bean
-    public DataSource dataSource(Environment environment) {
-
-        String pw = environment.getProperty("dataSource.password"),
-                user = environment.getProperty("dataSource.user"),
-                url = environment.getProperty("dataSource.url");
-
-        Class<Driver> classOfDs = environment.getPropertyAsClass("dataSource.driverClassName", Driver.class);
-
-        SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
-        dataSource.setPassword(pw);
-        dataSource.setUrl(url);
-        dataSource.setUsername(user);
-        dataSource.setDriverClass(classOfDs);
-
-        return dataSource;
-    }
 
     @Bean
     public JobRepositoryFactoryBean jobRepository(DataSource ds, PlatformTransactionManager tx) throws Exception {
