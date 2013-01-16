@@ -4,15 +4,16 @@ import java.sql.Driver;
 import java.util.Date;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
-import org.springframework.batch.core.configuration.support.MapJobRegistry;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.NonTransientResourceException;
@@ -22,12 +23,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportResource;
 import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
@@ -35,11 +35,27 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.social.importer.FlickrImporter;
-import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-@ImportResource("/batch.xml")
+@EnableBatchProcessing
 public class ImporterConfiguration {
+
+	@Inject
+	private JobBuilderFactory jobs;
+
+	@Inject
+	private StepBuilderFactory steps;
+
+	@Bean
+	public Job flickrImportJob(CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters) {
+		return jobs.get("flickrImportJob").flow(step1(commonObjectThatNeedsJobParameters)).end().build();
+	}
+
+	@Bean
+	protected Step step1(CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters) {
+		return steps.get("step1").<String, String> chunk(10).reader(itemReader(commonObjectThatNeedsJobParameters))
+				.writer(itemWriter()).build();
+	}
 
 	@Bean
 	public FlickrImporter importer(@Qualifier("flickrImportJob")
@@ -55,23 +71,6 @@ public class ImporterConfiguration {
 	@Bean
 	public TaskScheduler taskScheduler() {
 		return new ConcurrentTaskScheduler();
-	}
-
-	@Bean
-	public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor() throws Exception {
-		JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor = new JobRegistryBeanPostProcessor();
-		jobRegistryBeanPostProcessor.setJobRegistry(this.mapJobRegistry());
-		return jobRegistryBeanPostProcessor;
-	}
-
-	@Bean
-	public PlatformTransactionManager transactionManager(DataSource ds) {
-		return new DataSourceTransactionManager(ds);
-	}
-
-	@Bean
-	public MapJobRegistry mapJobRegistry() throws Exception {
-		return new MapJobRegistry();
 	}
 
 	@Bean
@@ -98,22 +97,6 @@ public class ImporterConfiguration {
 		dataSource.setDriverClass(classOfDs);
 
 		return dataSource;
-	}
-
-	@Bean
-	public JobRepositoryFactoryBean jobRepository(DataSource ds, PlatformTransactionManager tx) throws Exception {
-		JobRepositoryFactoryBean jobRepositoryFactoryBean = new JobRepositoryFactoryBean();
-		jobRepositoryFactoryBean.setDataSource(ds);
-		jobRepositoryFactoryBean.setTransactionManager(tx);
-		return jobRepositoryFactoryBean;
-	}
-
-	@Bean
-	public SimpleJobLauncher jobLauncher(TaskExecutor[] te, JobRepository jobRepository) throws Exception {
-		SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
-		simpleJobLauncher.setJobRepository(jobRepository);
-		simpleJobLauncher.setTaskExecutor(te[0]);
-		return simpleJobLauncher;
 	}
 
 	public static class CommonObjectThatNeedsJobParameters {
@@ -154,14 +137,14 @@ public class ImporterConfiguration {
 	}
 
 	@Bean
-	@Scope("step")
+	@Scope(value = "step", proxyMode = ScopedProxyMode.TARGET_CLASS)
 	public CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters(@Value("#{jobParameters['when']}")
 	Date when) {
 		return new CommonObjectThatNeedsJobParameters(when);
 	}
 
 	@Bean
-	@Scope("step")
+	@StepScope
 	public ItemReader<String> itemReader(CommonObjectThatNeedsJobParameters commonObjectThatNeedsJobParameters) {
 		return new MyItemReader(commonObjectThatNeedsJobParameters);
 	}
