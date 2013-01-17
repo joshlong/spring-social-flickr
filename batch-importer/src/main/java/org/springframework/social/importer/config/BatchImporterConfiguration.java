@@ -1,19 +1,25 @@
 package org.springframework.social.importer.config;
 
 import org.springframework.batch.core.Job;
-import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
-import org.springframework.batch.core.configuration.support.MapJobRegistry;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.support.SimpleJobLauncher;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.ItemPreparedStatementSetter;
 import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.core.PreparedStatementSetter;
@@ -43,7 +49,7 @@ import java.util.Map;
 
 @Configuration
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
-@ImportResource("classpath:/batch.xml")
+@EnableBatchProcessing
 public class BatchImporterConfiguration {
 
     @Bean
@@ -53,6 +59,59 @@ public class BatchImporterConfiguration {
                                    TaskScheduler[] taskScheduler) {
         return new FlickrImporter(dataSource, importFlickrPhotosJob, jobLauncher, taskScheduler[0]);
     }
+
+    @Bean(name = "flickrImportJob")
+    public Job flickrImportJob(
+            JobBuilderFactory jobs,
+            @Qualifier("step1") Step s1,
+            @Qualifier("step2") Step s2,
+            @Qualifier("step3") Step s3
+    ) {
+        return jobs.get("flickrImportJob")
+                .flow(s1)
+                .next(s2)
+                .next(s3)
+                .end()
+                .build();
+    }
+
+
+    @Bean(name = "step1")
+    public Step step1(StepBuilderFactory stepBuilderFactory,
+                      @Qualifier("photoAlbumItemReader") ItemReader<PhotoSet> ir,
+                      @Qualifier("photoAlbumItemWriter") ItemWriter<PhotoSet> iw
+    ) {
+        return stepBuilderFactory.get("step1")
+                .<PhotoSet, PhotoSet>chunk(10)
+                .reader(ir)
+                .writer(iw)
+                .build();
+    }
+
+    @Bean(name = "step2")
+    public Step step2(StepBuilderFactory stepBuilderFactory,
+                      @Qualifier("delegatingFlickrPhotoAlbumPhotoItemReader") ItemReader<Photo> delegatingPhotoSetPhotoItemReader,
+                      @Qualifier("photoDetailItemWriter") ItemWriter<Photo> itemWriter) {
+        return stepBuilderFactory.get("step2")
+                .<Photo, Photo>chunk(10)
+                .reader(delegatingPhotoSetPhotoItemReader)
+                .writer(itemWriter)
+                .build();
+    }
+
+    @Bean(name = "step3")
+    public Step step3(StepBuilderFactory stepBuilderFactory,
+                      @Qualifier("photoDetailItemReader") ItemReader<Photo> ir,
+                      @Qualifier("photoDownloadingItemProcessor") ItemProcessor<Photo, Photo> ip,
+                      @Qualifier("photoDownloadedAcknowledgingItemWriter") ItemWriter<Photo> iw) {
+        return stepBuilderFactory.get("step3")
+                .<Photo, Photo>chunk(10)
+                .reader(ir)
+                .processor(ip)
+                .writer(iw)
+                .build();
+    }
+
 
     @Bean
     public TaskScheduler taskScheduler() {
@@ -65,17 +124,9 @@ public class BatchImporterConfiguration {
     }
 
     @Bean
-    public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor() throws Exception {
-        JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor = new JobRegistryBeanPostProcessor();
-        jobRegistryBeanPostProcessor.setJobRegistry( new MapJobRegistry());
-        return jobRegistryBeanPostProcessor;
-    }
-
-    @Bean
     public PlatformTransactionManager transactionManager(DataSource ds) {
         return new DataSourceTransactionManager(ds);
     }
-
 
 
     @Bean
@@ -96,33 +147,17 @@ public class BatchImporterConfiguration {
         return dataSource;
     }
 
-    @Bean
-    public JobRepositoryFactoryBean jobRepository(DataSource ds, PlatformTransactionManager tx) throws Exception {
-        JobRepositoryFactoryBean jobRepositoryFactoryBean = new JobRepositoryFactoryBean();
-        jobRepositoryFactoryBean.setDataSource(ds);
-        jobRepositoryFactoryBean.setTransactionManager(tx);
-        return jobRepositoryFactoryBean;
-    }
-
-    @Bean
-    public SimpleJobLauncher jobLauncher(JobRepository jobRepository) throws Exception {
-        SimpleJobLauncher simpleJobLauncher = new SimpleJobLauncher();
-        simpleJobLauncher.setJobRepository(jobRepository);
-        return simpleJobLauncher;
-    }
-
-
     // ===================================================
     // STEP #1
     // ===================================================
     @Bean(name = "photoAlbumItemReader")
-    @Scope(value = "step")
-    public PhotoSetItemReader photoAlbumItemReader(Flickr flickr) throws Throwable {
+    @StepScope
+    public ItemReader<PhotoSet> photoAlbumItemReader(Flickr flickr) throws Throwable {
         return new PhotoSetItemReader(flickr);
     }
 
     @Bean(name = "photoAlbumItemWriter")
-    public JdbcBatchItemWriter<PhotoSet> writer(DataSource ds) {
+    public ItemWriter<PhotoSet> writer(DataSource ds) {
         String upsertPhotoAlbumsSql =
                 "with new_values (title, user_id, description,  album_id, url, count_photos, count_videos) as ( " +
                         " values (  :t, :ui, :d, :a, :u, :cp, :cv )  ), " +
@@ -177,7 +212,7 @@ public class BatchImporterConfiguration {
     }
 
     @Bean(name = "delegatingFlickrPhotoAlbumPhotoItemReader")
-    @Scope(value = "step")
+    @StepScope
     public DelegatingPhotoSetPhotoItemReader delegatingFlickrPhotoAlbumPhotoItemReader(@Qualifier("photoSetJdbcCursorItemReader") JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader, Flickr flickr) {
         return new DelegatingPhotoSetPhotoItemReader(flickr, photoSetJdbcCursorItemReader);
     }
@@ -207,7 +242,7 @@ public class BatchImporterConfiguration {
     }
 
     @Bean(name = "photoDetailItemReader")
-    @Scope("step")
+    @StepScope
     public JdbcCursorItemReader<Photo> photoDetailItemReader(@Value("#{jobParameters['userId']}") final String userId, DataSource dataSource) {
         JdbcCursorItemReader<Photo> photoSetJdbcCursorItemReader = new JdbcCursorItemReader<Photo>();
         photoSetJdbcCursorItemReader.setSql("select * from photos p , photo_albums pa where p.album_id = pa.album_id and p.downloaded is null and user_id = ?");
@@ -234,15 +269,15 @@ public class BatchImporterConfiguration {
         return photoSetJdbcCursorItemReader;
     }
 
-    @Scope("step")
+    @StepScope
     @Bean(name = "photoDownloadingItemProcessor")
     public PhotoDownloadingItemProcessor photoDownloadingItemProcessor(@Value("#{jobParameters['output']}") String outputPath, Flickr flickrTemplate) {
         return new PhotoDownloadingItemProcessor(flickrTemplate, new File(outputPath));
     }
 
-    @Scope("step")
+    @StepScope
     @Bean(name = "photoDownloadedAcknowledgingItemWriter")
-    public JdbcBatchItemWriter photoDownloadingItemWriter(DataSource dataSource) {
+    public JdbcBatchItemWriter<Photo> photoDownloadingItemWriter(DataSource dataSource) {
 
         JdbcBatchItemWriter<Photo> photoJdbcBatchItemWriter = new JdbcBatchItemWriter<Photo>();
         photoJdbcBatchItemWriter.setDataSource(dataSource);
