@@ -61,19 +61,15 @@ public class BatchDownloadController {
         assert importer != null : "importer can't be null";
     }
 
-    // couple of different use cases
-    // 1) kick off the process
     @RequestMapping(value = "/batch/start", method = RequestMethod.GET)
     public String startImport() throws Throwable {
-
         final String flickrUserId = flickr.peopleOperations().getProfileId();
         final File outputForFlickrUser = forUserOutput(this.basePhotoPath, flickrUserId);
-        importer.importPhotosToDirectory(flickrUserId, outputForFlickrUser);
+        importer.startImport(flickrUserId, outputForFlickrUser);
         logger.info("launched the import process for user " + flickrUserId +
                 " to output directory " + outputForFlickrUser.getAbsolutePath() + ".");
         return "welcome";
     }
-
 
     @RequestMapping("/batch/albums")
     @ResponseBody

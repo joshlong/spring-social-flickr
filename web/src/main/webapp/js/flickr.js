@@ -28,10 +28,12 @@ module.value('ui.config', {
 
 // idea try moving the module.run logic into this ajaxUtils object and then try separating this out into a separate object
 module.factory('ajaxUtils', function () {
-    var contentType = 'application/json; charset=utf-8' ,
+    var ret = null,
+        contentType = 'application/json; charset=utf-8' ,
         dataType = 'json',
         errorCallback = function (e) {
-            alert('error trying to connect to ');
+            ret.errorConnecting = true;
+            console.log('error trying to connect.');
         };
 
 
@@ -73,8 +75,8 @@ module.factory('ajaxUtils', function () {
         return e;
     };
 
-    return {
-
+    var ret = {
+        errorConnecting:false,
         url:function (u) {
             return baseUrl + u;
         },
@@ -96,6 +98,8 @@ module.factory('ajaxUtils', function () {
             });
         }
     };
+    return ret;
+
 });
 
 module.factory('batchImportService', function (ajaxUtils) {
@@ -103,7 +107,7 @@ module.factory('batchImportService', function (ajaxUtils) {
     return {
         launchImport:function (cb) {
             console.log('calling launch()')
-            ajaxUtils.get(ajaxUtils.url(batchEntryUrl + '/start'), {}, cb );
+            ajaxUtils.get(ajaxUtils.url(batchEntryUrl + '/start'), {}, cb);
         },
         getAlbums:function (cb) {
             ajaxUtils.get(ajaxUtils.url(batchEntryUrl + '/albums'), {}, function (albums) {
@@ -133,8 +137,6 @@ function BatchImportController($rootScope, $scope, $q, $timeout, ajaxUtils, batc
 
     function renderAlbums(albums) {
         var matrix = [];
-
-
         var cr = [];
         for (var i = 0; i < albums.length; i++) {
             albums[i].uid = 1 + i;
@@ -151,28 +153,37 @@ function BatchImportController($rootScope, $scope, $q, $timeout, ajaxUtils, batc
         $scope.albums = matrix;
     }
 
+    var intervalPointer = null;
+
     // todo put this in a setTimeout loop
     function refreshAlbums() {
+
+        if (ajaxUtils.errorConnecting) {
+
+            console.log("there's been an error connecting to the REST service. We will not bother attempting to " +
+                "fetch the albums now. Additionally, we will cancel the existing interval.");
+
+            clearInterval(intervalPointer);
+
+            return;
+        }
+
         batchImportService.getAlbums(function (albums) {
             console.log('inside getAlbums() callback with ' + albums.length + '.')
             $scope.$apply(function () {
+
                 function urlForImage(album) {
-                    var url = album.hasCoverImage ? album.primaryImageUrl : '/imgs/image-not-found.gif';
-                    return url;
+                    return album.hasCoverImage ? album.primaryImageUrl : '/imgs/image-not-found.gif';
                 }
 
                 for (var i = 0; i < albums.length; i++)
                     albums[i].coverImageUrl = urlForImage(albums[i]);
-
 
                 renderAlbums(albums);
             });
         });
     }
 
+    intervalPointer = setInterval(refreshAlbums, 10 * 1000);
 
-    refreshAlbums(); // get things started
-
-    // then follow up with a refresh
-    setInterval(refreshAlbums, 10 * 1000);
 }

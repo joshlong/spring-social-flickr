@@ -31,13 +31,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FlickrImporter implements Lifecycle {
 
     private volatile JobLauncher jobLauncher;
-
     private volatile Job importFlickrPhotosJob;
-
-    private volatile Map<File, JobExecution> mapOfFilesToRunningJobs = new ConcurrentHashMap<File, JobExecution>();
-
+    private volatile Map<String, JobExecution> mapOfUserIdsToJobs = new ConcurrentHashMap<String, JobExecution>();
     private DataSource dataSource;
-
     private JdbcTemplate jdbcTemplate;
     private volatile TaskScheduler scheduler;
 
@@ -47,7 +43,6 @@ public class FlickrImporter implements Lifecycle {
         this.dataSource = dataSource;
         this.scheduler = s;
         this.jdbcTemplate = new JdbcTemplate(this.dataSource);
-
     }
 
     protected void doImportPhotosToDirectory(File file, JobParameters jp) throws Throwable {
@@ -55,7 +50,7 @@ public class FlickrImporter implements Lifecycle {
         Assert.isTrue(file.exists() || file.mkdirs(), "the " + file.getAbsolutePath() + " must exist.");
         Assert.isTrue(file.canWrite(), "we must be able to write to " + file.getAbsolutePath() + ".");
         JobExecution jobExecution = jobLauncher.run(this.importFlickrPhotosJob, jp);
-        this.mapOfFilesToRunningJobs.put(file, jobExecution);
+        this.mapOfUserIdsToJobs.put(jp.getString("userId"), jobExecution);
     }
 
     /**
@@ -66,7 +61,7 @@ public class FlickrImporter implements Lifecycle {
      * @param out output
      * @throws Throwable
      */
-    public void importPhotosToDirectory(String userId, File out) throws Throwable {
+    public void startImport(String userId, File out) throws Throwable {
         JobParameters jp = new JobParametersBuilder()
                 .addDate("when", new Date())
                 .addString("output", out.getAbsolutePath())
@@ -80,7 +75,7 @@ public class FlickrImporter implements Lifecycle {
      *
      * @param file the directory to which the imported photos should be written
      */
-    public void importPhotosToDirectory(String userId, String at, String atSecret, String consumerKey, String consumerSecret, File file) throws Throwable {
+    public void startImport(String userId, String at, String atSecret, String consumerKey, String consumerSecret, File file) throws Throwable {
         JobParameters jp = new JobParametersBuilder()
                 .addDate("when", new Date())
                 .addString("accessToken", at)
@@ -91,6 +86,13 @@ public class FlickrImporter implements Lifecycle {
                 .addString("output", file.getAbsolutePath())
                 .toJobParameters();
         doImportPhotosToDirectory(file, jp);
+    }
+
+    public void stopImport(String userId) {
+        if (this.mapOfUserIdsToJobs.containsKey(userId)) {
+            JobExecution jobExecution = this.mapOfUserIdsToJobs.get(userId);
+            jobExecution.stop();
+        }
     }
 
 
@@ -119,16 +121,16 @@ public class FlickrImporter implements Lifecycle {
      */
     public static class JobCleanupRunnable implements Runnable {
 
-        private volatile Map<File, JobExecution> executionMap;
+        private volatile Map<String, JobExecution> executionMap;
 
-        public JobCleanupRunnable(Map<File, JobExecution> ex) {
+        public JobCleanupRunnable(Map<String, JobExecution> ex) {
             this.executionMap = ex;
         }
 
         @Override
         public void run() {
-            for (Map.Entry<File, JobExecution> entry : executionMap.entrySet())
-                if (!entry.getValue().isRunning())
+            for (Map.Entry<String, JobExecution> entry : executionMap.entrySet())
+                if (!entry.getValue().isRunning() || entry.getValue().isStopping())
                     executionMap.remove(entry.getKey());
         }
     }
@@ -140,18 +142,18 @@ public class FlickrImporter implements Lifecycle {
         if (null == this.scheduler) {
             this.scheduler = new ConcurrentTaskScheduler();
         }
-        this.scheduler.scheduleAtFixedRate(new JobCleanupRunnable(this.mapOfFilesToRunningJobs), 1000);
+        this.scheduler.scheduleAtFixedRate(new JobCleanupRunnable(this.mapOfUserIdsToJobs), 1000);
     }
 
     @Override
     public void stop() {
-        for (JobExecution jobExecution : this.mapOfFilesToRunningJobs.values()) {
+        for (JobExecution jobExecution : this.mapOfUserIdsToJobs.values()) {
             jobExecution.stop();
         }
     }
 
     @Override
     public boolean isRunning() {
-        return this.mapOfFilesToRunningJobs.size() > 0;
+        return this.mapOfUserIdsToJobs.size() > 0;
     }
 }

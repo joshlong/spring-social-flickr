@@ -45,7 +45,7 @@ public class Main {
                 accessToken = environment.getProperty("accessToken"),
                 accessTokenSecret = environment.getProperty("accessTokenSecret");
 
-        flickrImporter.importPhotosToDirectory(userId, accessToken, accessTokenSecret, clientId, clientSecret, output);
+        flickrImporter.startImport(userId, accessToken, accessTokenSecret, clientId, clientSecret, output);
 
 
     }
