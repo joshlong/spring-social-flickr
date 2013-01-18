@@ -25,16 +25,16 @@ import java.sql.Driver;
 @EnableBatchProcessing
 public class BatchInfrastructureConfiguration {
 
-    @Bean
+     @Bean
     public TaskScheduler taskScheduler() {
         return new ConcurrentTaskScheduler();
     }
 
-    @Bean
+ /*   @Bean
     public TaskExecutor taskExecutor() {
         return new ConcurrentTaskExecutor();
     }
-
+*/
     @Bean
     public PlatformTransactionManager transactionManager(DataSource ds) {
         return new DataSourceTransactionManager(ds);

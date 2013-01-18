@@ -72,10 +72,10 @@ ${messages}
 <h1>Testing Photo Template</h1>
 <hr>
 <h2>Batch Download Console</h2>
-<a href="${pageContext.request.contextPath}/batch/start">Start Download..</a>
 
 <div class="importConsole" ng-controller="BatchImportController">
 
+    <a ng-click="launch()">Start Batch Download..</a>
 
     <div ng-repeat="row in albums" class="albumRow">
         <div ng-repeat="album in row" class="album">

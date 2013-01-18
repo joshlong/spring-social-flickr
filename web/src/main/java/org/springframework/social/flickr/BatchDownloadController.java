@@ -46,8 +46,7 @@ public class BatchDownloadController {
 
     @PostConstruct
     public void setup() throws Throwable {
-        if (!basePhotoPath.exists())
-            assert basePhotoPath.mkdirs() : "we could not ensure that " + basePhotoPath.getAbsolutePath() + " exists.";
+        assert basePhotoPath.exists() || basePhotoPath.mkdirs() : "we could not ensure that " + basePhotoPath.getAbsolutePath() + " exists.";
     }
 
     protected File forUserOutput(File base, String profileId) {
@@ -70,9 +69,8 @@ public class BatchDownloadController {
         final String flickrUserId = flickr.peopleOperations().getProfileId();
         final File outputForFlickrUser = forUserOutput(this.basePhotoPath, flickrUserId);
         importer.importPhotosToDirectory(flickrUserId, outputForFlickrUser);
-
-        logger.info("launched the import process for user " + flickrUserId + " to output directory " + outputForFlickrUser.getAbsolutePath() + ".");
-
+        logger.info("launched the import process for user " + flickrUserId +
+                " to output directory " + outputForFlickrUser.getAbsolutePath() + ".");
         return "welcome";
     }
 

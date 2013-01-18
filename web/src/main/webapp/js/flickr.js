@@ -101,7 +101,10 @@ module.factory('ajaxUtils', function () {
 module.factory('batchImportService', function (ajaxUtils) {
     var batchEntryUrl = '/batch/';
     return {
-
+        launchImport:function (cb) {
+            console.log('calling launch()')
+            ajaxUtils.get(ajaxUtils.url(batchEntryUrl + '/start'), {}, cb );
+        },
         getAlbums:function (cb) {
             ajaxUtils.get(ajaxUtils.url(batchEntryUrl + '/albums'), {}, function (albums) {
                 for (var i = 0; i < albums.length; i++) {
@@ -116,6 +119,12 @@ module.factory('batchImportService', function (ajaxUtils) {
 
 
 function BatchImportController($rootScope, $scope, $q, $timeout, ajaxUtils, batchImportService) {
+
+    $scope.launch = function () {
+        batchImportService.launchImport(function () {
+            console.log('batch job is finished!');
+        });
+    };
 
     var rowSize = 5; // how many albums to display in a given row
     console.log('starting the batch import controller');
