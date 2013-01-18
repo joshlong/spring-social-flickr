@@ -76,7 +76,7 @@ ${messages}
 <div class="importConsole" ng-controller="BatchImportController">
 
     <a ng-click="launch()" ng-show=" !started  ">Start Batch Download..</a>
-    <a ng-click="stop()" ng-show=" started  ">Stop Batch Download..</a>
+    <span ng-show=" started">Batch Downloading Your Photos...</span>
 
     <div ng-repeat="row in albums" class="albumRow">
         <div ng-repeat="album in row" class="album">

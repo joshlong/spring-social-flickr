@@ -30,6 +30,7 @@ import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.Lifecycle;
 import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
@@ -59,7 +60,7 @@ import java.sql.Types;
 @Import(BatchInfrastructureConfiguration.class)
 public class BatchImporterConfiguration {
 
-    @Bean
+    @Bean (initMethod = "start",destroyMethod = "stop")
     public FlickrImporter importer(DataSource dataSource,
                                    @Qualifier("flickrImportJob") Job importFlickrPhotosJob,
                                    JobLauncher jobLauncher,

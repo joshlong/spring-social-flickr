@@ -1,9 +1,9 @@
 package org.springframework.social.importer.config;
 
 
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
-import org.springframework.http.converter.BufferedImageHttpMessageConverter;
 import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.flickr.api.impl.FlickrTemplate;
 
@@ -18,13 +18,11 @@ import org.springframework.social.flickr.api.impl.FlickrTemplate;
 @Import(BatchImporterConfiguration.class)
 public class MainBatchImporterConfiguration {
     @Bean
-    @Scope("step")
+    @StepScope
     public Flickr flickrTemplate(@Value("#{jobParameters['accessToken']}") String accessToken,
                                  @Value("#{jobParameters['accessTokenSecret']}") String atSecret,
                                  @Value("#{jobParameters['consumerKey']}") String consumerKey,
                                  @Value("#{jobParameters['consumerSecret']}") String consumerSecret) {
-        FlickrTemplate ft = new FlickrTemplate(consumerKey, consumerSecret, accessToken, atSecret);
-        ft.getRestTemplate().getMessageConverters().add(new BufferedImageHttpMessageConverter());
-        return ft;
+        return new FlickrTemplate(consumerKey, consumerSecret, accessToken, atSecret);
     }
 }

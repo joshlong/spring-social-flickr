@@ -59,14 +59,6 @@ public class BatchDownloadController {
         assert importer != null : "importer can't be null";
     }
 
-    @RequestMapping(value = "/batch/stop", method = RequestMethod.GET)
-    @ResponseStatus(HttpStatus.OK)
-    public void stopImport() throws Throwable {
-        final String flickrUserId = flickr.peopleOperations().getProfileId();
-        importer.stopImport(flickrUserId);
-        logger.info("attempted to stop the import process for user " + flickrUserId + " to output directory.");
-    }
-
     @RequestMapping(value = "/batch/start", method = RequestMethod.GET)
     @ResponseStatus(HttpStatus.OK)
     public void startImport() throws Throwable {

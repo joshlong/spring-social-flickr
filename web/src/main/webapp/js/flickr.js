@@ -132,6 +132,7 @@ function BatchImportController($rootScope, $scope, $q, $timeout, ajaxUtils, batc
         batchImportService.stopImport(function () {
             $scope.started = false;
             console.log('stopped the import.');
+            killPolling();
         });
     };
     $scope.launch = function () {
@@ -168,6 +169,14 @@ function BatchImportController($rootScope, $scope, $q, $timeout, ajaxUtils, batc
 
     var intervalPointer = null;
 
+    function killPolling(){
+
+        clearInterval(intervalPointer);
+    }
+
+
+
+
     // todo put this in a setTimeout loop
     function refreshAlbums() {
 
@@ -175,8 +184,7 @@ function BatchImportController($rootScope, $scope, $q, $timeout, ajaxUtils, batc
 
             console.log("there's been an error connecting to the REST service. We will not bother attempting to " +
                 "fetch the albums now. Additionally, we will cancel the existing interval.");
-
-            clearInterval(intervalPointer);
+            killPolling();
 
             return;
         }

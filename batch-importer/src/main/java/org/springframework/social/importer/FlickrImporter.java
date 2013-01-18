@@ -1,11 +1,11 @@
 package org.springframework.social.importer;
 
+import org.apache.log4j.Logger;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.context.Lifecycle;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.scheduling.TaskScheduler;
@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Josh Long
  */
-public class FlickrImporter implements Lifecycle {
+public class FlickrImporter {
 
     private volatile JobLauncher jobLauncher;
     private volatile Job importFlickrPhotosJob;
@@ -36,6 +36,7 @@ public class FlickrImporter implements Lifecycle {
     private DataSource dataSource;
     private JdbcTemplate jdbcTemplate;
     private volatile TaskScheduler scheduler;
+    private final Logger logger = Logger.getLogger(getClass());
 
     public FlickrImporter(DataSource dataSource, Job importFlickrPhotosJob, JobLauncher jobLauncher, TaskScheduler s) {
         this.importFlickrPhotosJob = importFlickrPhotosJob;
@@ -43,21 +44,7 @@ public class FlickrImporter implements Lifecycle {
         this.dataSource = dataSource;
         this.scheduler = s;
         this.jdbcTemplate = new JdbcTemplate(this.dataSource);
-    }
-
-    protected void doImportPhotosToDirectory(File file, JobParameters jp) throws Throwable {
-        Assert.notNull(file, "you must provide a non-null File object.");
-        Assert.isTrue(file.exists() || file.mkdirs(), "the " + file.getAbsolutePath() + " must exist.");
-        Assert.isTrue(file.canWrite(), "we must be able to write to " + file.getAbsolutePath() + ".");
-
-        JobExecution jobExecution = jobLauncher.run(this.importFlickrPhotosJob, jp);
-
-        String userId = jp.getString("userId");
-
-        stopImport(userId);
-
-        if (!this.mapOfUserIdsToJobs.containsKey(userId))
-            this.mapOfUserIdsToJobs.put(userId, jobExecution);
+        start();
     }
 
     /**
@@ -95,17 +82,9 @@ public class FlickrImporter implements Lifecycle {
         doImportPhotosToDirectory(file, jp);
     }
 
-    public void stopImport(String userId) {
-        if (this.mapOfUserIdsToJobs.containsKey(userId)) {
-            JobExecution jobExecution = this.mapOfUserIdsToJobs.get(userId);
-            jobExecution.stop();
-        }
-        doPurgeDeadJobs();
-    }
-
 
     public Collection<PhotoSet> photoSetsImportedForUser(String userId) {
-        String q = " select   (select pp.thumb_url from  photos pp where pp.is_primary = true and pp.album_id= pa.album_id) as primary_url,  ( select  count(*) from photos p where p.album_id = pa.album_id) as photos_imported ,   ( select  count(*) FRom photos p where downloaded is not null and p.album_id = pa.album_id) as photos_downloaded , pa.* from photo_albums  pa where user_id = ?";
+        String q = " select (select pp.thumb_url from  photos pp where pp.is_primary = true and pp.album_id= pa.album_id) as primary_url,  ( select  count(*) from photos p where p.album_id = pa.album_id) as photos_imported ,   ( select  count(*) FRom photos p where downloaded is not null and p.album_id = pa.album_id) as photos_downloaded , pa.* from photo_albums  pa where user_id = ?";
         return jdbcTemplate.query(q, new RowMapper<PhotoSet>() {
             @Override
             public PhotoSet mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -115,7 +94,8 @@ public class FlickrImporter implements Lifecycle {
                         rs.getString("primary_url"),
                         rs.getString("title"),
                         rs.getString("description"),
-                        rs.getString("album_id"), rs.getString("user_id")
+                        rs.getString("album_id"),
+                        rs.getString("user_id")
                 );
                 photoSet.setPhotosImported(rs.getInt("photos_imported"));
                 photoSet.setPhotosDownloaded(rs.getInt("photos_downloaded"));
@@ -124,13 +104,6 @@ public class FlickrImporter implements Lifecycle {
         }, userId);
     }
 
-    protected void doPurgeDeadJobs() {
-        for (Map.Entry<String, JobExecution> entry : mapOfUserIdsToJobs.entrySet())
-            if (!entry.getValue().isRunning() || entry.getValue().isStopping())
-                mapOfUserIdsToJobs.remove(entry.getKey());
-    }
-
-    @Override
     public void start() {
         // we don't have a particular obligation to do anything here..
         if (null == this.scheduler) {
@@ -141,18 +114,39 @@ public class FlickrImporter implements Lifecycle {
             public void run() {
                 doPurgeDeadJobs();
             }
-        }, 1000);
+        }, 10 * 1000); // 10 s
+        logger.info("start() called on " + FlickrImporter.class.getName());
     }
 
-    @Override
+
     public void stop() {
         for (JobExecution jobExecution : this.mapOfUserIdsToJobs.values()) {
             jobExecution.stop();
         }
+        doPurgeDeadJobs();
+        logger.debug("stop() called on " + FlickrImporter.class.getName());
     }
 
-    @Override
-    public boolean isRunning() {
-        return this.mapOfUserIdsToJobs.size() > 0;
+
+    protected void doPurgeDeadJobs() {
+        logger.debug("doPurgeDeadJobs(): there are " + this.mapOfUserIdsToJobs.size() + " jobs.");
+        for (Map.Entry<String, JobExecution> entry : mapOfUserIdsToJobs.entrySet())
+            if (!entry.getValue().isRunning() || entry.getValue().isStopping())
+                mapOfUserIdsToJobs.remove(entry.getKey());
+    }
+
+    protected void doImportPhotosToDirectory(File file, JobParameters jp) throws Throwable {
+        Assert.notNull(file, "you must provide a non-null File object.");
+        Assert.isTrue(file.exists() || file.mkdirs(), "the " + file.getAbsolutePath() + " must exist.");
+        Assert.isTrue(file.canWrite(), "we must be able to write to " + file.getAbsolutePath() + ".");
+        String userId = jp.getString("userId");
+
+     //   stopImport(userId);
+
+        JobExecution jobExecution = jobLauncher.run(this.importFlickrPhotosJob, jp);
+
+        logger.debug("starting import " + userId);
+
+        this.mapOfUserIdsToJobs.put(userId, jobExecution);
     }
 }

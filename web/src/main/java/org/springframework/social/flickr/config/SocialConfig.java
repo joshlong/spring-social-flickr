@@ -32,7 +32,6 @@ import org.springframework.social.flickr.user.SimpleSignInAdapter;
 import org.springframework.social.flickr.user.User;
 import org.springframework.social.importer.config.BatchImporterConfiguration;
 import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;

@@ -15,13 +15,19 @@
  */
 package org.springframework.social.importer.config;
 
+import org.springframework.batch.core.configuration.annotation.DefaultBatchConfigurer;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.support.SimpleJobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -37,12 +43,26 @@ import java.sql.Driver;
  */
 @Configuration
 @EnableBatchProcessing
-public class BatchInfrastructureConfiguration {
+public class BatchInfrastructureConfiguration   {
+
+//
+//    @Bean
+//    public JobLauncher jobLauncher(TaskExecutor taskExecutor, JobRepository jobRepository) {
+//        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
+//        jobLauncher.setTaskExecutor(taskExecutor);
+//        jobLauncher.setJobRepository(jobRepository);
+//        return jobLauncher;
+//    }
 
     @Bean
     public TaskScheduler taskScheduler() {
         return new ConcurrentTaskScheduler();
     }
+
+//    @Bean
+//    public TaskExecutor taskExecutor() {
+//        return new ConcurrentTaskExecutor();
+//    }
 
     @Bean
     public PlatformTransactionManager transactionManager(DataSource ds) {
