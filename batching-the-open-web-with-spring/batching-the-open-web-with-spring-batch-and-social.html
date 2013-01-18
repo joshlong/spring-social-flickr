@@ -371,7 +371,7 @@ login flow. </p>
         representing all the photo sets (photo albums, or compilations) and then caches them. As Spring Batch asks it
         one by one for the next record, the class simply takes one at a time from the queue, removes it from the queue,
         adapts it into a domain model object for this <CODE>job</CODE>, and returns it.
-         Here is the code:
+        Here is the code:
         <div class="source">
             batch-importer/src/main/java/org/springframework/social/importer/batch/PhotoSetItemReader.java
         </div>
@@ -426,65 +426,97 @@ login flow. </p>
 
         The <CODE>reader</CODE> is an instance of <CODE>JdbcCursorItemReader</CODE>
         which reads through all the records in the <CODE>photos</CODE> table, and passes them through a
-        <CODE>RowMapper</CODE>  (which you might <EM>also</EM> recognize from core Spring's <CODE>JdbcTemplate</CODE>)
-        which takes a JDBC <CODE>ResultSet</CODE> and adapts it to the domain model of our batch application, in this case, a
+        <CODE>RowMapper</CODE> (which you might <EM>also</EM> recognize from core Spring's <CODE>JdbcTemplate</CODE>)
+        which takes a JDBC <CODE>ResultSet</CODE> and adapts it to the domain model of our batch application, in this
+        case, a
         <CODE>Photo</CODE>.
-        The SQL is a simple <Code>SELECT</Code> statement,  filtering all the records that have not been
+        The SQL is a simple <Code>SELECT</Code> statement, filtering all the records that have not been
         downloaded.
 
-        The <CODE>Photo</CODE> is then passed to the <CODE>ItemProcessor</CODE>        (an class called  <CODE>PhotoDownloadingItemProcessor</CODE>)
-        which  uses the <CODE>Flickr</CODE> we worked so hard to set up to download the  actual bytes for the photograph.
+        The <CODE>Photo</CODE> is then passed to the <CODE>ItemProcessor</CODE> (an class called <CODE>PhotoDownloadingItemProcessor</CODE>)
+        which uses the <CODE>Flickr</CODE> we worked so hard to set up to download the actual bytes for the photograph.
         The <CODE>ItemProcessor</CODE> calculates the right path to which the photograph should be written, using the
         Flickr user ID,
         photo set ID,
-        and the photo ID. It ensures that this directory exists on the file system. Then    it reads a <Code>BufferedImage</Code> into
-        memory and writes the bytes to the  file    described by the previously calculated path.
+        and the photo ID. It ensures that this directory exists on the file system. Then it reads a
+        <Code>BufferedImage</Code> into
+        memory and writes the bytes to the file described by the previously calculated path.
         <div class="source">
             batch-importer/src/main/java/org/springframework/social/importer/batch/PhotoDownloadingItemProcessor.java
         </div>
 
-         There is a small optimization here so that, if the file already exists and has data (greater than 0 bytes in size),
+        There is a small optimization here so that, if the file already exists and has data (greater than 0 bytes in
+        size),
         it is not re-downloaded.
 
-         Assuming everything goes well, the <CODE>Photo</CODE> object for the downloaded image is returned from the <Code>ItemProcessor</Code>
-        where it's sent to the <CODE>ItemWriter</CODE>   (a bean named <CODE>photoDownloadedAcknowledgingItemWriter</CODE>). The <CODE>ItemWriter</CODE>
+        Assuming everything goes well, the <CODE>Photo</CODE> object for the downloaded image is returned from the
+        <Code>ItemProcessor</Code>
+        where it's sent to the <CODE>ItemWriter</CODE> (a bean named <CODE>photoDownloadedAcknowledgingItemWriter</CODE>).
+        The <CODE>ItemWriter</CODE>
         is simply another instance of <CODE>JdbcBatchItemWriter</CODE> that simply <EM>acknowledges</EM> the
         download by updating a flag in the <CODE>photos</CODE> table for the appropriate record.
 
     </LI>
 </OL>
 <DIV class="sidebar"><h1> Upserts </h1> The SQL syntax used in some of these JDBC writers might seem a little exotic to
-    the uninitiated. It is the PostgreSQL equivalent of an <EM><a href="http://en.wikipedia.org/wiki/Merge_(SQL)">upsert</a></EM>. Many databases support some
+    the uninitiated. It is the PostgreSQL equivalent of an <EM><a
+            href="http://en.wikipedia.org/wiki/Merge_(SQL)">upsert</a></EM>. Many databases support some
     database-specific equivalent of this
     functionality: it <Code>inserts</Code> data with a given key if no existing row is found to have the same
     key, or, alternatively, <EM>updates</EM> the existing data with the same key.
     This helps ensure that, if the job is stopped and re-run, there are no duplicate records.
 </div>
 
- <h3>
-   Working with the Batch Process from the Web Application
- </h3>
-     <P>  This whole batch process is nicely wrapped up in a separate class and package. I made it possible to launch this batch job from
-         within the web application by exposing a URL (<CODE>/batch/start</CODE>) which automatically starts the download for the given user.
+<h3>
+    Working with the Batch Process from the Web Application
+</h3>
+
+<P> This whole batch process is nicely wrapped up in a separate class and package. I made it possible to launch this
+    batch job from
+    within the web application by exposing a URL (<CODE>/batch/start</CODE>) which automatically starts the download for
+    the given user.
 
 
+</P>
 
-     </P>
 <DIV class="source">
-     web/src/main/java/org/springframework/social/flickr/BatchDownloadController.java
+    web/src/main/java/org/springframework/social/flickr/BatchDownloadController.java
 </DIV>
-<p>    The controller simply injects a reference to the current, scoped <CODE>Flickr</CODE> object and an instance to
+<p> The controller simply injects a reference to the current, scoped <CODE>Flickr</CODE> object and an instance to
     a configured <CODE>FlickrImporter</CODE> class.
 
-    The <CODE>FlickrImporter</CODE> class simply  provides a facade around
+    The <CODE>FlickrImporter</CODE> class simply provides a facade around
     the machinery to run and manage Spring Batch <CODE>jobs</CODE>.
 
+    There are two ways to run this application - in the web environment, where Spring Social will automatically renew
+    your access token and access token secret,
+    or on the command line, in which ase you need to provide the access token and access token secret. If you run this
+    application on the command line, the code assumes that you specify the required client ID, client secret, access
+    token, and access token secret as
+    <EM>parameters</EM> to the when you launch it. The <CODE>FlickrImporter#startImport(String userId, String at, String
+        atSecret, String consumerKey, String consumerSecret, File file) </CODE>
+    variant handles this use case. If you run the batch job from within the web application, Spring Social automatically
+    furnish us
+    with a valid <CODE>Flickr</CODE> object and we don't need to manage one as part of the Spring Batch job, we can
+    simply use the one that
+    is bound to our web session.
+    The <CODE>FlickrImporter#startImport(String userId, File out)</CODE> variant handles this use case.
 
+    Spring Batch jobs are run using the <CODE>JobLauncher</CODE> object, an instance of which Spring Batch will
+    automatically create when you use the <CODE>@EnableBatchProcessing</CODE>
+    annotation. You need only inject that instance into the appropriate code.
 
+    The <CODE>JobLauncher#run</CODE> method expects a pointer to the defined <CODE>Job</CODE> object, and
+    it expects parameters - arguments to the batch job that differentiate the batch job from the previous ones.
+    If you ran a daily report every day at 2AM, then perhaps the parameter would be the timestamp.
+    In our case, we need to specify the <CODE>userId</CODE>, and the output directory, at a minimum. So both variants of the <CODE>startImport</CODE>
+    method spend time building up a <CODE>JobParameters</CODE> instance, which is then ultimately passed to the
+    <CODE>JobLaucher</CODE>  instance.
 
 </p>
+
 <DIV class="source">
-batch-importer/src/main/java/org/springframework/social/importer/FlickrImporter.java
+    batch-importer/src/main/java/org/springframework/social/importer/FlickrImporter.java
 </div>
 <a name="end"/></body>
 </html>
