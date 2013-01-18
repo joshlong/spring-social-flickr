@@ -49,8 +49,15 @@ public class FlickrImporter implements Lifecycle {
         Assert.notNull(file, "you must provide a non-null File object.");
         Assert.isTrue(file.exists() || file.mkdirs(), "the " + file.getAbsolutePath() + " must exist.");
         Assert.isTrue(file.canWrite(), "we must be able to write to " + file.getAbsolutePath() + ".");
+
         JobExecution jobExecution = jobLauncher.run(this.importFlickrPhotosJob, jp);
-        this.mapOfUserIdsToJobs.put(jp.getString("userId"), jobExecution);
+
+        String userId = jp.getString("userId");
+
+        stopImport(userId);
+
+        if (!this.mapOfUserIdsToJobs.containsKey(userId))
+            this.mapOfUserIdsToJobs.put(userId, jobExecution);
     }
 
     /**
@@ -93,6 +100,7 @@ public class FlickrImporter implements Lifecycle {
             JobExecution jobExecution = this.mapOfUserIdsToJobs.get(userId);
             jobExecution.stop();
         }
+        doPurgeDeadJobs();
     }
 
 
@@ -119,7 +127,7 @@ public class FlickrImporter implements Lifecycle {
     /**
      * tests to see if any jobs can be removed and, if so, does.
      */
-    public static class JobCleanupRunnable implements Runnable {
+    public class JobCleanupRunnable implements Runnable {
 
         private volatile Map<String, JobExecution> executionMap;
 
@@ -129,12 +137,15 @@ public class FlickrImporter implements Lifecycle {
 
         @Override
         public void run() {
-            for (Map.Entry<String, JobExecution> entry : executionMap.entrySet())
-                if (!entry.getValue().isRunning() || entry.getValue().isStopping())
-                    executionMap.remove(entry.getKey());
+            doPurgeDeadJobs();
         }
     }
 
+    protected void doPurgeDeadJobs() {
+        for (Map.Entry<String, JobExecution> entry : mapOfUserIdsToJobs.entrySet())
+            if (!entry.getValue().isRunning() || entry.getValue().isStopping())
+                mapOfUserIdsToJobs.remove(entry.getKey());
+    }
 
     @Override
     public void start() {
