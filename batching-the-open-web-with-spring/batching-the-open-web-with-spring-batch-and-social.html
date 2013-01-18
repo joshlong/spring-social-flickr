@@ -326,22 +326,20 @@ login flow. </p>
 </p>
  <DIV class="source" >batch-importer/src/main/java/org/springframework/social/importer/config/BatchInfrastructureConfiguration.java</DIV>
 <P>
- The schema for the bookkeaping tables is presented below.
-     All the schema in this blog are for PostgreSQL. It's not hard to modify them for other databases and, in the case of Spring Batch's schemas,
+
+     All the schema in this blog are for   PostgreSQL. It's not hard to modify them for other databases and, in the case of Spring Batch's schemas,
     you don't even need to do that much because there are
     <a href="https://github.com/SpringSource/spring-batch/tree/master/spring-batch-core/src/main/resources/org/springframework/batch/core">
     multiple permutations of the schema defined
     with the project for many different databases</a>.
 </P>
-<div class="source" start="1">
-     batch-importer/src/main/resources/batch_pg.sql
-</div>
+
 <P></P>
 
 <p> Here's the configuration for our <CODE>flickrImportJob</CODE> job.</p>
-<div class="source" start="1">batch-importer/src/main/java/org/springframework/social/importer/config/BatchImporterConfiguration.java</div>
+<div class="source" >batch-importer/src/main/java/org/springframework/social/importer/config/BatchImporterConfiguration.java</div>
 
-<P> The job defines three <CODE>step</CODE>s.
+<P> The configuration defines one <CODE>job</CODE> which in turn defines  three <CODE>step</CODE>s.
 
     This job is charged with loading information about all the albums from Flickr into a database (<CODE>step1</CODE>),
     then loading all information for
@@ -356,7 +354,8 @@ login flow. </p>
 
 </P>
 
-<P> Each <CODE>step</CODE> defines a tasklet, which in turn manages a
+<P> Each <CODE>step</CODE> defines the <EM>chunk</EM> it wants to work with (e.g., how many records should be read before a write is attempted),
+    which in turn manages a
     <CODE>reader</CODE>, a <CODE>writer</CODE>, and optionally a <CODE>processor</CODE>.
     The beans for the <CODE>reader</CODE>s (subclasses of <CODE>ItemReader</CODE>), <CODE>writer</CODE>s (subclasses of
     <CODE>ItemWriter</CODE>),
