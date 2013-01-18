@@ -1,4 +1,4 @@
-<html xmlns="http://www.w3.org/1999/html">
+<html xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 <head><title>The Title</title>
     <link rel='stylesheet' href='default.css' type='text/css' media='all'/>
     <script src="jquery-1.8.3.min.js"></script>
@@ -315,16 +315,25 @@ login flow. </p>
 
     </P>
 <P>
-    To use Spring Batch, you need to configure a few things common to all Spring Batch jobs.
+    To use Spring Batch, you need to configure a few things common to all Spring Batch <CODE>job</code>s.
 
-    First, you  need to configure a database connection ( <CODE>javax.sql.DataSource</CODE>)
+    First, you  need to configure a database connection  (<CODE>javax.sql.DataSource</CODE>)
     which in turn requires a few database tables that Spring Batch uses to handle the bookkeeping related to the state
     of batch jobs. Since Spring Batch needs to handle transactions, you also need to create a <CODE>PlatformTransactionManager</CODE>
-    bean that can be used with the transactional resource (in this case, the <CODE>DataSource</CODE>). Finally, Spring Batch needs concurrency
- The schema for these tables is presented below.
-
+    bean that can be used with the transactional resource (in this case, the <CODE>DataSource</CODE>).
+    Finally, since - when we launch the jobs - we keep a thread running in the background to garbage collect any references to completed jobs.
+    This requires a <CODE>TaskScheduler</CODE>. These beans are defined below:
+</p>
+ <DIV class="source" >batch-importer/src/main/java/org/springframework/social/importer/config/BatchInfrastructureConfiguration.java</DIV>
+<P>
+ The schema for the bookkeaping tables is presented below.
+     All the schema in this blog are for PostgreSQL. It's not hard to modify them for other databases and, in the case of Spring Batch's schemas,
+    you don't even need to do that much because there are
+    <a href="https://github.com/SpringSource/spring-batch/tree/master/spring-batch-core/src/main/resources/org/springframework/batch/core">
+    multiple permutations of the schema defined
+    with the project for many different databases</a>.
 </P>
-<div class="source" >
+<div class="source" start="1">
      batch-importer/src/main/resources/batch_pg.sql
 </div>
 <P></P>
