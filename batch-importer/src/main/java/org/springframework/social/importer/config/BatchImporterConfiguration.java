@@ -9,6 +9,7 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemStream;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.ItemPreparedStatementSetter;
 import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
@@ -16,21 +17,12 @@ import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.core.env.Environment;
-import org.springframework.core.task.TaskExecutor;
+import org.springframework.context.annotation.*;
 import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
-import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.importer.FlickrImporter;
 import org.springframework.social.importer.batch.DelegatingPhotoSetPhotoItemReader;
@@ -38,18 +30,22 @@ import org.springframework.social.importer.batch.PhotoDownloadingItemProcessor;
 import org.springframework.social.importer.batch.PhotoSetItemReader;
 import org.springframework.social.importer.model.Photo;
 import org.springframework.social.importer.model.PhotoSet;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.io.File;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
-
+/**
+ * @author Josh Long
+ */
 @Configuration
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS)
-@EnableBatchProcessing
+@Import(BatchInfrastructureConfiguration.class)
 public class BatchImporterConfiguration {
 
     @Bean
@@ -90,12 +86,14 @@ public class BatchImporterConfiguration {
 
     @Bean(name = "step2")
     public Step step2(StepBuilderFactory stepBuilderFactory,
+                      @Qualifier("photoSetJdbcCursorItemReader")ItemStream  theDelegate,
                       @Qualifier("delegatingFlickrPhotoAlbumPhotoItemReader") ItemReader<Photo> delegatingPhotoSetPhotoItemReader,
                       @Qualifier("photoDetailItemWriter") ItemWriter<Photo> itemWriter) {
         return stepBuilderFactory.get("step2")
                 .<Photo, Photo>chunk(10)
                 .reader(delegatingPhotoSetPhotoItemReader)
                 .writer(itemWriter)
+                .stream(theDelegate)
                 .build();
     }
 
@@ -113,51 +111,17 @@ public class BatchImporterConfiguration {
     }
 
 
-    @Bean
-    public TaskScheduler taskScheduler() {
-        return new ConcurrentTaskScheduler();
-    }
-
-    @Bean
-    public TaskExecutor taskExecutor() {
-        return new ConcurrentTaskExecutor();
-    }
-
-    @Bean
-    public PlatformTransactionManager transactionManager(DataSource ds) {
-        return new DataSourceTransactionManager(ds);
-    }
-
-
-    @Bean
-    public DataSource dataSource(Environment environment) {
-
-        String pw = environment.getProperty("dataSource.password"),
-                user = environment.getProperty("dataSource.user"),
-                url = environment.getProperty("dataSource.url");
-
-        Class<Driver> classOfDs = environment.getPropertyAsClass("dataSource.driverClassName", Driver.class);
-
-        SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
-        dataSource.setPassword(pw);
-        dataSource.setUrl(url);
-        dataSource.setUsername(user);
-        dataSource.setDriverClass(classOfDs);
-
-        return dataSource;
-    }
-
     // ===================================================
     // STEP #1
     // ===================================================
     @Bean(name = "photoAlbumItemReader")
     @StepScope
-    public ItemReader<PhotoSet> photoAlbumItemReader(Flickr flickr) throws Throwable {
+    public PhotoSetItemReader  photoAlbumItemReader(Flickr flickr) throws Throwable {
         return new PhotoSetItemReader(flickr);
     }
 
     @Bean(name = "photoAlbumItemWriter")
-    public ItemWriter<PhotoSet> writer(DataSource ds) {
+    public JdbcBatchItemWriter<PhotoSet>  writer(DataSource ds) {
         String upsertPhotoAlbumsSql =
                 "with new_values (title, user_id, description,  album_id, url, count_photos, count_videos) as ( " +
                         " values (  :t, :ui, :d, :a, :u, :cp, :cv )  ), " +
@@ -188,6 +152,10 @@ public class BatchImporterConfiguration {
         return jdbcBatchItemWriter;
     }
 
+    // ===================================================
+    // STEP #2
+    // ===================================================
+
     @Bean(name = "photoSetJdbcCursorItemReader")
     public JdbcCursorItemReader<PhotoSet> readPhotoAlbumsFromDatabaseItemReader(DataSource dataSource) {
 
@@ -213,12 +181,12 @@ public class BatchImporterConfiguration {
 
     @Bean(name = "delegatingFlickrPhotoAlbumPhotoItemReader")
     @StepScope
-    public DelegatingPhotoSetPhotoItemReader delegatingFlickrPhotoAlbumPhotoItemReader(@Qualifier("photoSetJdbcCursorItemReader") JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader, Flickr flickr) {
+    public  DelegatingPhotoSetPhotoItemReader delegatingFlickrPhotoAlbumPhotoItemReader(@Qualifier("photoSetJdbcCursorItemReader") JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader, Flickr flickr) {
         return new DelegatingPhotoSetPhotoItemReader(flickr, photoSetJdbcCursorItemReader);
     }
 
     @Bean(name = "photoDetailItemWriter")
-    public JdbcBatchItemWriter<Photo> photoDetailItemWriter(DataSource ds) {
+    public  JdbcBatchItemWriter<Photo> photoDetailItemWriter(DataSource ds) {
 
         String upsertSql = " with new_values ( is_primary,photo_id,thumb_url,url,comments,album_id ) as (  values (  :is_primary,:photo_id,:thumb_url,:url,:comments,:album_id )  ),  upsert as ( update photos p set    is_primary = nv.is_primary,photo_id = nv.photo_id,thumb_url = nv.thumb_url,url = nv.url,comments = nv.comments,album_id = nv.album_id  FROM new_values nv WHERE p.photo_id = nv.photo_id RETURNING p.*  )  insert into photos( is_primary,photo_id,thumb_url,url,comments,album_id )  SELECT  nv.* FROM new_values nv WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.photo_id = nv.photo_id ) ";
         JdbcBatchItemWriter<Photo> photoDetailJdbcBatchItemWriter = new JdbcBatchItemWriter<Photo>();
@@ -243,7 +211,7 @@ public class BatchImporterConfiguration {
 
     @Bean(name = "photoDetailItemReader")
     @StepScope
-    public JdbcCursorItemReader<Photo> photoDetailItemReader(@Value("#{jobParameters['userId']}") final String userId, DataSource dataSource) {
+    public    JdbcCursorItemReader<Photo>  photoDetailItemReader(@Value("#{jobParameters['userId']}") final String userId, DataSource dataSource) {
         JdbcCursorItemReader<Photo> photoSetJdbcCursorItemReader = new JdbcCursorItemReader<Photo>();
         photoSetJdbcCursorItemReader.setSql("select * from photos p , photo_albums pa where p.album_id = pa.album_id and p.downloaded is null and user_id = ?");
         photoSetJdbcCursorItemReader.setDataSource(dataSource);
@@ -271,13 +239,13 @@ public class BatchImporterConfiguration {
 
     @StepScope
     @Bean(name = "photoDownloadingItemProcessor")
-    public PhotoDownloadingItemProcessor photoDownloadingItemProcessor(@Value("#{jobParameters['output']}") String outputPath, Flickr flickrTemplate) {
+    public ItemProcessor<Photo,Photo> photoDownloadingItemProcessor(@Value("#{jobParameters['output']}") String outputPath, Flickr flickrTemplate) {
         return new PhotoDownloadingItemProcessor(flickrTemplate, new File(outputPath));
     }
 
     @StepScope
     @Bean(name = "photoDownloadedAcknowledgingItemWriter")
-    public JdbcBatchItemWriter<Photo> photoDownloadingItemWriter(DataSource dataSource) {
+    public ItemWriter<Photo> photoDownloadingItemWriter(DataSource dataSource) {
 
         JdbcBatchItemWriter<Photo> photoJdbcBatchItemWriter = new JdbcBatchItemWriter<Photo>();
         photoJdbcBatchItemWriter.setDataSource(dataSource);

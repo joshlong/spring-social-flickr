@@ -311,10 +311,10 @@ login flow. </p>
     <CODE>Flickr</CODE> API implementation that we can use to drive our batch process.
     Spring Batch makes it very easy to describe complex workflows as a series of <CODE>step</CODE>s inside of a single
     <CODE>job</CODE>
-    using the Spring Batch XML DSL. Here's the configuration for our <CODE>flickrImportJob</CODE> job.
+    using the Spring Batch Java DSL available in Spring Batch 2.2. Here's the configuration for our <CODE>flickrImportJob</CODE> job.
 </P>
 
-<div class="source" start="1">batch-importer/src/main/resources/batch.xml</div>
+<div class="source" start="1">batch-importer/src/main/java/org/springframework/social/importer/config/BatchImporterConfiguration.java</div>
 
 <P> The job defines three <CODE>step</CODE>s.
 
@@ -341,9 +341,6 @@ login flow. </p>
 
 </P>
 
-<div class="source">
-    batch-importer/src/main/java/org/springframework/social/importer/config/BatchImporterConfiguration.java
-</div>
        <P>
 
            Let's look at some of the configuration involved.

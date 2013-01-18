@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Josh Long
  */
-public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo>, ItemStream {
+public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo> {
 
     private JdbcCursorItemReader<PhotoSet> masterAlbumDelegate;
     private Flickr flickrTemplate;
@@ -60,7 +60,7 @@ public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo>, Ite
         // downloads the 'large' image
         return new Photo(photo.getId(), photo.getIsPrimary(), photo.getUrl(PhotoSizeEnum.b), photo.getUrl(PhotoSizeEnum.s), photo.getTitle(), null, photoSet.getId());
     }
-
+/*
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
         masterAlbumDelegate.open(executionContext);
@@ -74,5 +74,5 @@ public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo>, Ite
     @Override
     public void close() throws ItemStreamException {
         masterAlbumDelegate.close();
-    }
+    }*/
 }
