@@ -106,9 +106,13 @@ module.factory('batchImportService', function (ajaxUtils) {
     var batchEntryUrl = '/batch/';
     return {
         launchImport:function (cb) {
-            console.log('calling launch()')
+            console.log('calling launch()');
             ajaxUtils.get(ajaxUtils.url(batchEntryUrl + '/start'), {}, cb);
         },
+        stopImport : function(cb) {
+            console.log( 'calling stop()');
+            ajaxUtils.get(ajaxUtils.url(batchEntryUrl + '/stop'),{}, cb);
+        } ,
         getAlbums:function (cb) {
             ajaxUtils.get(ajaxUtils.url(batchEntryUrl + '/albums'), {}, function (albums) {
                 for (var i = 0; i < albums.length; i++) {
@@ -124,7 +128,14 @@ module.factory('batchImportService', function (ajaxUtils) {
 
 function BatchImportController($rootScope, $scope, $q, $timeout, ajaxUtils, batchImportService) {
 
+    $scope.stop = function () {
+        batchImportService.stopImport(function () {
+            $scope.started = false;
+            console.log('stopped the import.');
+        });
+    };
     $scope.launch = function () {
+        $scope.started = true;
         batchImportService.launchImport(function () {
             console.log('batch job is finished!');
         });
@@ -132,6 +143,8 @@ function BatchImportController($rootScope, $scope, $q, $timeout, ajaxUtils, batc
 
     var rowSize = 5; // how many albums to display in a given row
     console.log('starting the batch import controller');
+
+    $scope.started = false;
 
     $scope.albums = [];
 

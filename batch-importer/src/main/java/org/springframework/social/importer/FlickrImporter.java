@@ -124,23 +124,6 @@ public class FlickrImporter implements Lifecycle {
         }, userId);
     }
 
-    /**
-     * tests to see if any jobs can be removed and, if so, does.
-     */
-    public class JobCleanupRunnable implements Runnable {
-
-        private volatile Map<String, JobExecution> executionMap;
-
-        public JobCleanupRunnable(Map<String, JobExecution> ex) {
-            this.executionMap = ex;
-        }
-
-        @Override
-        public void run() {
-            doPurgeDeadJobs();
-        }
-    }
-
     protected void doPurgeDeadJobs() {
         for (Map.Entry<String, JobExecution> entry : mapOfUserIdsToJobs.entrySet())
             if (!entry.getValue().isRunning() || entry.getValue().isStopping())
@@ -153,7 +136,12 @@ public class FlickrImporter implements Lifecycle {
         if (null == this.scheduler) {
             this.scheduler = new ConcurrentTaskScheduler();
         }
-        this.scheduler.scheduleAtFixedRate(new JobCleanupRunnable(this.mapOfUserIdsToJobs), 1000);
+        this.scheduler.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                doPurgeDeadJobs();
+            }
+        }, 1000);
     }
 
     @Override
