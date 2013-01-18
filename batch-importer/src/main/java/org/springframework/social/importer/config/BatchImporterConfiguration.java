@@ -25,7 +25,6 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemStream;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.database.ItemPreparedStatementSetter;
 import org.springframework.batch.item.database.ItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
@@ -51,8 +50,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Josh Long
@@ -100,7 +97,7 @@ public class BatchImporterConfiguration {
 
     @Bean(name = "step2")
     public Step step2(StepBuilderFactory stepBuilderFactory,
-                      @Qualifier("photoSetJdbcCursorItemReader")ItemStream  theDelegate,
+                      @Qualifier("photoSetJdbcCursorItemReader") ItemStream theDelegate,
                       @Qualifier("delegatingFlickrPhotoAlbumPhotoItemReader") ItemReader<Photo> delegatingPhotoSetPhotoItemReader,
                       @Qualifier("photoDetailItemWriter") ItemWriter<Photo> itemWriter) {
         return stepBuilderFactory.get("step2")
@@ -130,12 +127,12 @@ public class BatchImporterConfiguration {
     // ===================================================
     @Bean(name = "photoAlbumItemReader")
     @StepScope
-    public PhotoSetItemReader  photoAlbumItemReader(Flickr flickr) throws Throwable {
+    public PhotoSetItemReader photoAlbumItemReader(Flickr flickr) throws Throwable {
         return new PhotoSetItemReader(flickr);
     }
 
     @Bean(name = "photoAlbumItemWriter")
-    public JdbcBatchItemWriter<PhotoSet>  writer(DataSource ds) {
+    public JdbcBatchItemWriter<PhotoSet> writer(DataSource ds) {
         String upsertPhotoAlbumsSql =
                 "with new_values (title, user_id, description,  album_id, url, count_photos, count_videos) as ( " +
                         " values (  :t, :ui, :d, :a, :u, :cp, :cv )  ), " +
@@ -195,14 +192,19 @@ public class BatchImporterConfiguration {
 
     @Bean(name = "delegatingFlickrPhotoAlbumPhotoItemReader")
     @StepScope
-    public  DelegatingPhotoSetPhotoItemReader delegatingFlickrPhotoAlbumPhotoItemReader(@Qualifier("photoSetJdbcCursorItemReader") JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader, Flickr flickr) {
+    public DelegatingPhotoSetPhotoItemReader delegatingFlickrPhotoAlbumPhotoItemReader(@Qualifier("photoSetJdbcCursorItemReader") JdbcCursorItemReader<PhotoSet> photoSetJdbcCursorItemReader, Flickr flickr) {
         return new DelegatingPhotoSetPhotoItemReader(flickr, photoSetJdbcCursorItemReader);
     }
 
     @Bean(name = "photoDetailItemWriter")
-    public  JdbcBatchItemWriter<Photo> photoDetailItemWriter(DataSource ds) {
-
-        String upsertSql = " with new_values ( is_primary,photo_id,thumb_url,url,comments,album_id ) as (  values (  :is_primary,:photo_id,:thumb_url,:url,:comments,:album_id )  ),  upsert as ( update photos p set    is_primary = nv.is_primary,photo_id = nv.photo_id,thumb_url = nv.thumb_url,url = nv.url,comments = nv.comments,album_id = nv.album_id  FROM new_values nv WHERE p.photo_id = nv.photo_id RETURNING p.*  )  insert into photos( is_primary,photo_id,thumb_url,url,comments,album_id )  SELECT  nv.* FROM new_values nv WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.photo_id = nv.photo_id ) ";
+    public JdbcBatchItemWriter<Photo> photoDetailItemWriter(DataSource ds) {
+        String upsertSql = " with new_values ( is_primary,photo_id,thumb_url,url,comments,album_id ) as ( " +
+                " values (  :is_primary,:photo_id,:thumb_url,:url,:comments,:album_id )  )," +
+                "  upsert as ( update photos p set    is_primary = nv.is_primary,photo_id = nv.photo_id," +
+                "thumb_url = nv.thumb_url,url = nv.url,comments = nv.comments,album_id = nv.album_id  FROM " +
+                "new_values nv WHERE p.photo_id = nv.photo_id RETURNING p.*  )  insert into photos( is_primary," +
+                "photo_id,thumb_url,url,comments,album_id )  SELECT  nv.* FROM new_values nv WHERE NOT EXISTS " +
+                "(SELECT 1 FROM upsert up WHERE up.photo_id = nv.photo_id ) ";
         JdbcBatchItemWriter<Photo> photoDetailJdbcBatchItemWriter = new JdbcBatchItemWriter<Photo>();
         photoDetailJdbcBatchItemWriter.setDataSource(ds);
         photoDetailJdbcBatchItemWriter.setAssertUpdates(false);
@@ -210,22 +212,26 @@ public class BatchImporterConfiguration {
         photoDetailJdbcBatchItemWriter.setItemSqlParameterSourceProvider(new ItemSqlParameterSourceProvider<Photo>() {
             @Override
             public SqlParameterSource createSqlParameterSource(Photo item) {
-                Map<String, Object> params = new HashMap<String, Object>();
-                params.put("photo_id", item.getId());
-                params.put("is_primary", item.isPrimary());
-                params.put("thumb_url", item.getThumbnailUrl());
-                params.put("url", item.getUrl());
-                params.put("comments", item.getComments());
-                params.put("album_id", item.getAlbumId());
-                return new MapSqlParameterSource(params);
+                return new MapSqlParameterSource()
+                        .addValue("photo_id", item.getId())
+                        .addValue("is_primary", item.isPrimary())
+                        .addValue("thumb_url", item.getThumbnailUrl())
+                        .addValue("url", item.getUrl())
+                        .addValue("comments", item.getComments())
+                        .addValue("album_id", item.getAlbumId());
+
             }
         });
         return photoDetailJdbcBatchItemWriter;
     }
 
+    // ===================================================
+    // STEP #3
+    // ===================================================
+
     @Bean(name = "photoDetailItemReader")
     @StepScope
-    public    JdbcCursorItemReader<Photo>  photoDetailItemReader(@Value("#{jobParameters['userId']}") final String userId, DataSource dataSource) {
+    public JdbcCursorItemReader<Photo> photoDetailItemReader(@Value("#{jobParameters['userId']}") final String userId, DataSource dataSource) {
         JdbcCursorItemReader<Photo> photoSetJdbcCursorItemReader = new JdbcCursorItemReader<Photo>();
         photoSetJdbcCursorItemReader.setSql("select * from photos p , photo_albums pa where p.album_id = pa.album_id and p.downloaded is null and user_id = ?");
         photoSetJdbcCursorItemReader.setDataSource(dataSource);
@@ -253,22 +259,22 @@ public class BatchImporterConfiguration {
 
     @StepScope
     @Bean(name = "photoDownloadingItemProcessor")
-    public ItemProcessor<Photo,Photo> photoDownloadingItemProcessor(@Value("#{jobParameters['output']}") String outputPath, Flickr flickrTemplate) {
+    public ItemProcessor<Photo, Photo> photoDownloadingItemProcessor(@Value("#{jobParameters['output']}") String outputPath, Flickr flickrTemplate) {
         return new PhotoDownloadingItemProcessor(flickrTemplate, new File(outputPath));
     }
 
     @StepScope
     @Bean(name = "photoDownloadedAcknowledgingItemWriter")
     public ItemWriter<Photo> photoDownloadingItemWriter(DataSource dataSource) {
-
         JdbcBatchItemWriter<Photo> photoJdbcBatchItemWriter = new JdbcBatchItemWriter<Photo>();
         photoJdbcBatchItemWriter.setDataSource(dataSource);
-        photoJdbcBatchItemWriter.setSql("UPDATE photos set downloaded = NOW() where photo_id = ? ");
+        photoJdbcBatchItemWriter.setSql("UPDATE photos set downloaded = NOW() where photo_id = :pid ");
         photoJdbcBatchItemWriter.setAssertUpdates(true);
-        photoJdbcBatchItemWriter.setItemPreparedStatementSetter(new ItemPreparedStatementSetter<Photo>() {
+        photoJdbcBatchItemWriter.setItemSqlParameterSourceProvider(new ItemSqlParameterSourceProvider<Photo>() {
             @Override
-            public void setValues(Photo item, PreparedStatement ps) throws SQLException {
-                ps.setString(1, item.getId());
+            public SqlParameterSource createSqlParameterSource(Photo photo) {
+                return new MapSqlParameterSource()
+                        .addValue("pid", photo.getId());
             }
         });
         return photoJdbcBatchItemWriter;

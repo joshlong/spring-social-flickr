@@ -1,6 +1,24 @@
+/*
+ * Copyright 2011 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.springframework.social.importer.batch;
 
-import org.springframework.batch.item.*;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.NonTransientResourceException;
+import org.springframework.batch.item.ParseException;
+import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.social.flickr.api.Flickr;
 import org.springframework.social.flickr.api.MediaEnum;
@@ -25,24 +43,21 @@ public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo> {
     private PhotoSet photoSet;
     private Queue<org.springframework.social.flickr.api.Photo> photoCollection = new ConcurrentLinkedQueue<org.springframework.social.flickr.api.Photo>();
 
-    public DelegatingPhotoSetPhotoItemReader(Flickr flickrTemplate, JdbcCursorItemReader<PhotoSet> masterAlbumDelegate) {
-        this.flickrTemplate = flickrTemplate;
+    public DelegatingPhotoSetPhotoItemReader(Flickr flickr, JdbcCursorItemReader<PhotoSet> masterAlbumDelegate) {
+        this.flickrTemplate = flickr;
         this.masterAlbumDelegate = masterAlbumDelegate;
     }
 
     @Override
     public Photo read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
 
-        // if theres nothing in the photo collection...
+        // if there's nothing in the photo collection...
         if (photoCollection.isEmpty()) {
-
             // then load a PhotoSet
             photoSet = this.masterAlbumDelegate.read();
-
             // if theres no PhotoSet, then we're done, no more photos to read
             if (null == photoSet)
                 return null;
-
 
             // if there is a PhotoSet, then load its PhotoDetails
             Photoset photosSet = flickrTemplate.photosetOperations().getPhotos(photoSet.getId(), null, null, null, null, MediaEnum.PHOTOS);
@@ -60,19 +75,4 @@ public class DelegatingPhotoSetPhotoItemReader implements ItemReader<Photo> {
         // downloads the 'large' image
         return new Photo(photo.getId(), photo.getIsPrimary(), photo.getUrl(PhotoSizeEnum.b), photo.getUrl(PhotoSizeEnum.s), photo.getTitle(), null, photoSet.getId());
     }
-/*
-    @Override
-    public void open(ExecutionContext executionContext) throws ItemStreamException {
-        masterAlbumDelegate.open(executionContext);
-    }
-
-    @Override
-    public void update(ExecutionContext executionContext) throws ItemStreamException {
-        masterAlbumDelegate.update(executionContext);
-    }
-
-    @Override
-    public void close() throws ItemStreamException {
-        masterAlbumDelegate.close();
-    }*/
 }

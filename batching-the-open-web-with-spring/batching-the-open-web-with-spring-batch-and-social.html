@@ -233,7 +233,6 @@
         name is a bean's <CODE>id</code>, and it takes the return value's class as the <code>class</code>. It takes the
         return value and stores it in the <CODE>ApplicationContext</code>, as a bean that can then be injected into
         other beans. </P></DIV>
-
 <OL>
     <LI><b> ConnectionFactoryLocator connectionFactoryLocator</b> the <CODE>ConnectionFactoryLocator</CODE> contains the
         at-runtime map of which APIs are available, and can return the correct connection factory by provider id (<code>flickr</code>)
@@ -305,80 +304,144 @@ login flow. </p>
 
 <h2> Batching with Spring Batch </h2>
 
-<P>
-    With the Spring MVC and Spring Social configuration all set up, we now have the ability to obtain a reference to a
-    valid reference to a
-    <CODE>Flickr</CODE> API implementation that we can use to drive our batch process.
-    Spring Batch makes it very easy to describe complex workflows as a series of <CODE>step</CODE>s inside of a single
-    <CODE>job</CODE>
-    using the Spring Batch Java DSL available in Spring Batch 2.2.
+<P> With the Spring MVC and Spring Social configuration all set up, we now have the ability to obtain a reference to a
+    valid reference to a <CODE>Flickr</CODE> API implementation that we can use to drive our batch process. Spring Batch
+    makes it very easy to describe complex batch processing workflows as a series of <CODE>step</CODE>s inside of a
+    single <CODE>job</CODE> using the Spring Batch Java DSL available in Spring Batch 2.2. </P>
 
-    </P>
-<P>
-    To use Spring Batch, you need to configure a few things common to all Spring Batch <CODE>job</code>s.
+<h3>Setting up Common Infrastructure </h3>
 
-    First, you  need to configure a database connection  (<CODE>javax.sql.DataSource</CODE>)
-    which in turn requires a few database tables that Spring Batch uses to handle the bookkeeping related to the state
-    of batch jobs. Since Spring Batch needs to handle transactions, you also need to create a <CODE>PlatformTransactionManager</CODE>
-    bean that can be used with the transactional resource (in this case, the <CODE>DataSource</CODE>).
-    Finally, since - when we launch the jobs - we keep a thread running in the background to garbage collect any references to completed jobs.
-    This requires a <CODE>TaskScheduler</CODE>. These beans are defined below:
-</p>
- <DIV class="source" >batch-importer/src/main/java/org/springframework/social/importer/config/BatchInfrastructureConfiguration.java</DIV>
-<P>
+<P> To use Spring Batch, you need to configure a few things common to all Spring Batch <CODE>job</code>s. Spring Batch
+    can set up most of the machinery required to use it by simply placing the <Code>@EnableBatchProcessing</Code>
+    annotation on your <CODE>@Configuration</CODE> class. From there, you need only define a few things specific to the
+    desired behavior of your application. Next, you need to configure a database connection
+    (<CODE>javax.sql.DataSource</CODE>) which in turn requires a few database tables that Spring Batch uses to handle
+    the bookkeeping related to the state of batch jobs. Since Spring Batch needs to handle transactions, you also need
+    to create a <CODE>PlatformTransactionManager</CODE> bean that can be used with the transactional resource (in this
+    case, the <CODE>DataSource</CODE>). Finally, since - when we launch the jobs - we keep a thread running in the
+    background to garbage collect any references to completed jobs. This requires a <CODE>TaskScheduler</CODE>. These
+    beans are defined below: </p>
 
-     All the schema in this blog are for   PostgreSQL. It's not hard to modify them for other databases and, in the case of Spring Batch's schemas,
-    you don't even need to do that much because there are
-    <a href="https://github.com/SpringSource/spring-batch/tree/master/spring-batch-core/src/main/resources/org/springframework/batch/core">
-    multiple permutations of the schema defined
-    with the project for many different databases</a>.
-</P>
+<DIV class="source">
+    batch-importer/src/main/java/org/springframework/social/importer/config/BatchInfrastructureConfiguration.java
+</DIV>
+<P> All the schema in this blog are for PostgreSQL. It's not hard to modify them for other databases and, in the case of
+    Spring Batch's schemas, you don't even need to do that much because there are <a
+            href="https://github.com/SpringSource/spring-batch/tree/master/spring-batch-core/src/main/resources/org/springframework/batch/core">
+        multiple permutations of the schema defined with the project for many different databases</a>. </P>
 
-<P></P>
+<h3> Defining our Import Job </h3>
 
 <p> Here's the configuration for our <CODE>flickrImportJob</CODE> job.</p>
-<div class="source" >batch-importer/src/main/java/org/springframework/social/importer/config/BatchImporterConfiguration.java</div>
 
-<P> The configuration defines one <CODE>job</CODE> which in turn defines  three <CODE>step</CODE>s.
+<div class="source">
+    batch-importer/src/main/java/org/springframework/social/importer/config/BatchImporterConfiguration.java
+</div>
+<P> The configuration defines one <CODE>job</CODE> (<code>@Bean Job flickrImportJob</code>) which in turn defines a flow
+    between three <CODE>step</CODE>s. This job is charged with loading information about all the albums from Flickr into
+    a database (<CODE>step1</CODE>), then loading all information for the photos for each album into a database (<CODE>step2</CODE>),
+    and then, for each photo, downloading the photo from Flickr into folders on the file system corresponding to each
+    photo album (<CODE>step3</CODE>). We could just read the information from the Flickr web service and start
+    downloading them directly, but then we wouldn't have a way to measure progress and resume the downloads if the batch
+    job failed. Keeping them in the database is fast and cheap and makes it easy for Spring Batch to help us keep track
+    of things. </P>
 
-    This job is charged with loading information about all the albums from Flickr into a database (<CODE>step1</CODE>),
-    then loading all information for
-    the photos for each album into a database (<CODE>step2</CODE>), and then, for each photo, downloading the
-    photo from Flickr into folders on the file system corresponding
-    to each photo album (<CODE>step3</CODE>).
-    We could just read the information from the Flickr web service and start downloading them directly, but then we
-    wouldn't have
-    a way to measure progress and resume the downloads if the batch job failed. Keeping them in the database is fast and
-    cheap and
-    makes it easy for Spring Batch to help us keep track of things.
+<P> Each <CODE>step</CODE> defines the <EM>chunk</EM> it wants to work with (e.g., how many records should be read
+    before a write is attempted), which in turn manages a <CODE>reader</CODE>, a <CODE>writer</CODE>, and optionally a
+    <CODE>processor</CODE>. The beans for the <CODE>reader</CODE>s (subclasses of <CODE>ItemReader</CODE>),
+    <CODE>writer</CODE>s (subclasses of <CODE>ItemWriter</CODE>), and <CODE>processor</CODE>s (subclasses of <CODE>ItemProcessor</CODE>)
+    are configured using Java configuration. The <CODE>reader</CODE>s read data from some data source, like a database,
+    a file system, or a web service like Flickr. The <CODE>processor</CODE>s, if specified, take the output from the
+    reader and optionally augment, update or transform them in some way to be suitable for the <CODE>writer</CODE>. The
+    <CODE>writer</CODE>s take the output from the reader (or, optionally, from the <CODE>processor</CODE>) and write
+    them to some data source, like a database, a file system, or a web service like Flickr. Let's work through the
+    configuration class to see how how many of the beans work. The first thing you should note is how little is actually
+    code we had to write. Most of the beans defined here are <CODE>ItemWriter</CODE> and <CODE>ItemReader</CODE>
+    implementations (<CODE>JdbcCursorItemReader</CODE> for reading, <CODE>JdbcBatchItemWriter</CODE> for writing) that
+    Spring Batch provides out of the box that make dealing with working with JDBC a breeze. </P>
 
-</P>
-
-<P> Each <CODE>step</CODE> defines the <EM>chunk</EM> it wants to work with (e.g., how many records should be read before a write is attempted),
-    which in turn manages a
-    <CODE>reader</CODE>, a <CODE>writer</CODE>, and optionally a <CODE>processor</CODE>.
-    The beans for the <CODE>reader</CODE>s (subclasses of <CODE>ItemReader</CODE>), <CODE>writer</CODE>s (subclasses of
-    <CODE>ItemWriter</CODE>),
-    and <CODE>processor</CODE>s (subclasses of <CODE>ItemProcessor</CODE>) are
-    configured using Java configuration.
-    Let's work through the configuration class to see how how many of the beans work.
-
-</P>
-
-       <P>
-
-           Let's look at some of the configuration involved.
-
-             Because Spring Batch is itself a framework with its own database state, the first thing we configure
-           is  beans required to work with.
-       </P>
+<P> Let's look at the <CODE>step</CODE>s.</P>
 <OL>
+    <LI><B>step1</B>: defines a <CODE>reader</CODE> and a <CODE>writer</CODE>. The reader
+        (<CODE>photoAlbumItemReader</CODE>) is a custom <CODE>ItemReader</CODE> class (<CODE>PhotoSetItemReader</CODE>)
+        that depends on the scoped <CODE>Flickr</CODE> instance. The <CODE>@Bean</CODE> definition for this class has
+        <CODE>@StepScoped</CODE>, which tells Spring Batch to create a new instance of this bean for <EM>every</EM>
+        <CODE>step</CODE> it's executed since it keeps state and can not be shared. The class itself is very simple.
+        Once it's configured and started up, it makes a call using the Flickr API binding, and retreives objects
+        representing all the photo sets (photo albums, or compilations) and then caches them. As Spring Batch asks it
+        one by one for the next record, the class simply takes one at a time from the queue, removes it from the queue,
+        adapts it into a domain model object for this <CODE>job</CODE>, and returns it.
+         Here is the code:
+        <div class="source">
+            batch-importer/src/main/java/org/springframework/social/importer/batch/PhotoSetItemReader.java
+        </div>
+
+
+        With this, the
+        <CODE>writer</CODE> (<code>photoAlbumItemWriter</code>) can now write information about the photo set into the
+        database. The <code>photoAlbumItemWriter</code> is a bean of type <CODE>JdbcBatchItemWriter</CODE>, which Spring
+        Batch provides. The <CODE>JdbcBatchItemWriter</CODE> needs the usual things - a <CODE>dataSource</CODE> to work
+        with, a <CODE>SQL</code> statement to execute, and a way of mapping the output of the <CODE>reader</CODE> (an
+        object of type <CODE>PhotoSet</CODE>) to the named parameters in the SQL statement. If you've ever used Spring's
+        <a href="http://static.springsource.org/spring/docs/current/spring-framework-reference/html/jdbc.html#jdbc-JdbcTemplate"><CODE>JdbcTemplate</CODE></a>,
+        then you'll recognize the <CODE>SqlParameterSource</CODE> which Spring Batch requires to correctly build up the
+        prepared statement. To satisfy this requirement, the <CODE>JdbcBatchItemWriter</CODE> requires a a <CODe>ItemSqlParameterSourceProvider</CODe>
+        implementation which essentially bundles up the parameters into a map of named prepared statement parameters to
+        values.
+    </LI>
+    <LI><b>step2</b>: This step's slightly more tricky. In this one, we actually <EM>nest</EM> our readers. We want to
+        read from all the <CODE>PhotoSet</CODE>s in the database, then, for each <CODE>PhotoSet</CODE>, read all the
+        <CODE>Photo</CODE>s from the Flickr web service and write them to the database. This approach is useful for
+        supporting reading master-detail data sets. The <CoDE>ItemReader</CoDE> is in a class called <CODE>DelegatingPhotoSetPhotoItemReader</CODE>.
+        It delegates to an instance of <CODE>JdbcCursorItemReader</CODE> to read a <CODE>PhotoSet</CODE> from the
+        database (the data we wrote in <CODE>step1</CODE>), and then, for each new <CODE>PhotoSet</CODE>, queries the
+        Flickr web service for all the photos that belong to that <CODE>PhotoSet</CODE>, which it then caches locally
+        and - one at a time - returns them until all the <CODE>Photo</CODE>s for a given <CODE>PhotoSet</CODE> have been
+        read, at which point a <EM>new</EM> <CODE>PhotoSet</CODE> is read from the database and the cyle continues.
+        Here's the source code for the <CODE>DelegatingPhotoSetPhotoItemReader</CODE>.
+        <div class="source">
+            batch-importer/src/main/java/org/springframework/social/importer/batch/DelegatingPhotoSetPhotoItemReader.java
+        </div>
+        Spring Batch supports <EM>resuming</EM> reads for <CODE>ItemReader</CODE> implementations that also support the
+        <CODE>ItemStream</CODE> interface. If you register a bean such as this as a <CODE>reader</CODE> then Spring
+        Batch will automatically call back the appropriate interface methods and give the <CODE>ItemReader</CODE> a
+        chance to persist its state (e.g., how far it's gotten). The delegate <CODE>JdbcCursorItemReader</CODE> supports
+        this property, but since we're embedding it in our <CODE>DelegatingPhotoSetPhotoItemReader</CODE>, we need to
+        tell Spring Batch to honor the <CODE>ItemStream</CODE> contract for us. We do this by calling the <CODE>stream(ItemStream)</CODE>
+        method when building the <CODE>Step</CODE> in the <CODE>@Bean public Step step2</CODE> Java configuration
+        method.
+
+        The <CODE>writer</CODE> (<code>photoDetailItemWriter</code>) is another <CODE>JdbcBatchItemWriter</CODE>
+        which simply writes information about each <CODE>Photo</CODE> to the <CODE>photos</CODE> table.
+
+    </LI>
     <LI>
+        <B>step3</B>:
+        The first two <CODE>step</CODE>s execute very quickly, relatively.
+        Even with tens of thousands of records, this should not take more than a few minutes on a modern machine.
+        This last step is where the proverbial rubber meets the road: it finds all the unprocessed photos, downloads
+        them, and then acknowledges the download.
+
+        It requires a <CODE>reader</CODE>, a <CODE>processor</CODE> and a <CODE>writer</CODE>.
+
+        The <CODE>reader</CODE> is an instance of <CODE>JdbcCursorItemReader</CODE>
+        which reads through all the records in the <CODE>photos</CODE> table, and passes them through a
+        <CODE>RowMapper</CODE>  (which you might <EM>also</EM> recognize from core Spring's <CODE>JdbcTemplate</CODE>)
+        which takes a ResulSet and adapts it to the domain model of our batch application, in this case, a
+        <CODE>Photo</CODE>.
+        The SQL is a simple <Code>SELECT</Code> statement,  filtering all the records that have not been
+        downloaded.
+
+        The <CODE>Photo</CODE> is then passed to the <CODE>ItemProcessor</CODE>
 
     </LI>
 </OL>
-
-<P></P>
-<a name="end"/>
-</body>
+<DIV class="sidebar"><h1> Upserts </h1> The SQL syntax used in some of these JDBC writers might seem a little exotic to
+    the uninitiated. It is the PostgreSQL equivalent of an <EM>upsert</EM>. Many databases support some
+    database-specific equivalent of this
+    functionality: it <Code>inserts</Code> data with a given key if no existing row is found to have the same
+    key, or, alternatively, <EM>updates</EM> the existing data with the same key.
+    This helps ensure that, if the job is stopped and re-run it, there are no duplicate records.
+</div>
+<a name="end"/></body>
 </html>
