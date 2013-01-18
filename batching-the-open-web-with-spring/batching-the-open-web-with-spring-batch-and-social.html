@@ -502,6 +502,9 @@ login flow. </p>
     is bound to our web session.
     The <CODE>FlickrImporter#startImport(String userId, File out)</CODE> variant handles this use case.
 
+</p>
+
+<P>
     Spring Batch jobs are run using the <CODE>JobLauncher</CODE> object, an instance of which Spring Batch will
     automatically create when you use the <CODE>@EnableBatchProcessing</CODE>
     annotation. You need only inject that instance into the appropriate code.
@@ -509,14 +512,28 @@ login flow. </p>
     The <CODE>JobLauncher#run</CODE> method expects a pointer to the defined <CODE>Job</CODE> object, and
     it expects parameters - arguments to the batch job that differentiate the batch job from the previous ones.
     If you ran a daily report every day at 2AM, then perhaps the parameter would be the timestamp.
-    In our case, we need to specify the <CODE>userId</CODE>, and the output directory, at a minimum. So both variants of the <CODE>startImport</CODE>
+    In our case, we need to specify the <CODE>userId</CODE>, and the output directory, at a minimum. So both variants of
+    the <CODE>startImport</CODE>
     method spend time building up a <CODE>JobParameters</CODE> instance, which is then ultimately passed to the
-    <CODE>JobLaucher</CODE>  instance.
+    <CODE>JobLaucher</CODE> instance.
 
 </p>
-
-<DIV class="source">
+ <P> Here's the code for the <CODE>FlickrImporter</CODE> object.</P>
+<div class="source">
     batch-importer/src/main/java/org/springframework/social/importer/FlickrImporter.java
 </div>
+<P> Because we expect to  use this object from a user interface (a web console), we expose support for querying the progress of the various albums.
+    To support this, the <CODE>Collection&lt;PhotoSet&gt; photoSetsImportedForUser(String userId)</CODE> method
+    returns information about all the <CODE>PhotoSets</CODE> based on a SQL projection that calculates how many photos have been downloaded, imported, etc.
+    This information is then made available to the user looking at the console, like this:
+</P>
+<div><img src="ssf_web_4.png" width="600"/></div>
+<H2>
+Conclusion
+</H2>
+<P> Spring Social provides a very natural way to work with social service providers like Flickr and Facebook and Twitter. However, these providers are
+ as successful as they are because they've managed to deal with <EM>lots</EM> of data. In order to integrate with them, you need to think about scaling your application
+    as well. Spring Batch makes chewing through large workloads in a reliable way a breeze, as you've hopefully seen, and these two projects work very well together!
+</P>
 <a name="end"/></body>
 </html>
