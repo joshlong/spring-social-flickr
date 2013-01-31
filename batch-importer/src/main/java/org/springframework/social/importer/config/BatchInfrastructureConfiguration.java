@@ -45,24 +45,10 @@ import java.sql.Driver;
 @EnableBatchProcessing
 public class BatchInfrastructureConfiguration   {
 
-//
-//    @Bean
-//    public JobLauncher jobLauncher(TaskExecutor taskExecutor, JobRepository jobRepository) {
-//        SimpleJobLauncher jobLauncher = new SimpleJobLauncher();
-//        jobLauncher.setTaskExecutor(taskExecutor);
-//        jobLauncher.setJobRepository(jobRepository);
-//        return jobLauncher;
-//    }
-
     @Bean
     public TaskScheduler taskScheduler() {
         return new ConcurrentTaskScheduler();
     }
-
-//    @Bean
-//    public TaskExecutor taskExecutor() {
-//        return new ConcurrentTaskExecutor();
-//    }
 
     @Bean
     public PlatformTransactionManager transactionManager(DataSource ds) {
